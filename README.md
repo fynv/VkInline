@@ -84,7 +84,7 @@ VkInline makes extensive use and abuse of the latest Vulkan features, like:
 
 So, be sure to have a driver that supports Vulkan 1.2. Nvidia users should use one of the "beta" drivers from [https://developer.nvidia.com/vulkan-driver](https://developer.nvidia.com/vulkan-driver).
 
-You make also need Vulkan SDK at runtime for some platforms.
+You may also need Vulkan SDK at runtime for some platforms.
 
 At Python side, VkInline depends on:
 * Python 3
