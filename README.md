@@ -38,7 +38,7 @@ print (darr_out.to_host())
 
 ```
 
-I will continue to work on to expose the rasterization and ray-tracing functionality in a similar fashion.
+I will work on to expose the rasterization and ray-tracing functionality in a similar fashion.
 
 ## Installation
 
