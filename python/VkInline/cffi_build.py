@@ -39,6 +39,8 @@ void* n_svuint32_create(unsigned v);
 unsigned n_svuint32_value(void* cptr);
 void* n_svfloat_create(float v);
 float n_svfloat_value(void* cptr);
+void* n_svdouble_create(double v);
+double n_svdouble_value(void* cptr);
 
 // SVBuffer
 void* n_svbuffer_create(const char* elem_type, unsigned long long size, void* hdata, int streamId);

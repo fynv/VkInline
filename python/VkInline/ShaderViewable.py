@@ -26,3 +26,9 @@ class SVFloat(ShaderViewable):
         self.m_cptr = native.n_svfloat_create(value)
     def value(self):
         return native.n_svfloat_value(self.m_cptr)
+
+class SVDouble(ShaderViewable):
+    def __init__(self, value):
+        self.m_cptr = native.n_svdouble_create(value)
+    def value(self):
+        return native.n_svdouble_value(self.m_cptr)   

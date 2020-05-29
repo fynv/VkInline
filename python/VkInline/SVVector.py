@@ -42,7 +42,9 @@ void set_value(in Comb_#hash# vec, in uint id, in {0} value)
         elif elem_type=='uint':
             nptype = np.uint32        
         elif elem_type=='float':
-            nptype = np.float32        
+            nptype = np.float32
+        elif elem_type=='double':
+            nptype = np.float64
         if end == -1:
             end = self.size()
         ret = np.empty(end - begin, dtype=nptype)
@@ -56,6 +58,8 @@ def device_vector_from_numpy(nparr, streamId=0):
         elem_type = 'uint'       
     elif nparr.dtype == np.float32:
         elem_type = 'float'
+    elif nparr.dtype == np.float64:
+        elem_type = 'double'
     size = len(nparr)
     ptr_host_data = nparr.__array_interface__['data'][0]
     return SVVector(elem_type, size, ptr_host_data, streamId)
@@ -66,7 +70,9 @@ def device_vector_from_list(lst, elem_type, streamId=0):
     elif elem_type=='uint':
         nptype = np.uint32
     elif elem_type=='float':
-        nptype = np.float32 
+        nptype = np.float32
+    elif elem_type=='double':
+        nptype = np.float64
     nparr = np.array(lst, dtype=nptype)
     size = len(lst)
     ptr_host_data = nparr.__array_interface__['data'][0]

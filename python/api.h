@@ -40,6 +40,8 @@ extern "C"
 	PY_VkInline_API unsigned n_svuint32_value(void* cptr);
 	PY_VkInline_API void* n_svfloat_create(float v);
 	PY_VkInline_API float n_svfloat_value(void* cptr);
+	PY_VkInline_API void* n_svdouble_create(double v);
+	PY_VkInline_API double n_svdouble_value(void* cptr);
 
 	// SVBuffer
 	PY_VkInline_API void* n_svbuffer_create(const char* elem_type, unsigned long long size, void* hdata, int streamId);

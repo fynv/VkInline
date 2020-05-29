@@ -34,10 +34,10 @@ namespace VkInline
 		const ShaderViewable* obj;
 	};
 
-	class BuiltIn : public ShaderViewable
+	class SomeShaderViewable : public ShaderViewable
 	{
 	public:
-		BuiltIn(const char* name_view_type, const void* data_view = "", size_t size_view = 1)
+		SomeShaderViewable(const char* name_view_type, const void* data_view = "", size_t size_view = 1)
 		{
 			m_name_view_type = name_view_type;
 			m_view_buf.resize(size_view);
@@ -54,13 +54,16 @@ namespace VkInline
 	};
 
 #define DECLAR_SV_BASIC(clsname, type_host, type_dev)\
-class clsname : public BuiltIn\
+class clsname : public SomeShaderViewable\
 {\
 public:\
-	clsname(type_host in) : BuiltIn(#type_dev, &in, sizeof(type_host)) {}\
+	clsname(type_host in) : SomeShaderViewable(#type_dev, &in, sizeof(type_host)) {}\
 };
 	DECLAR_SV_BASIC(SVInt32, int32_t, int)
 	DECLAR_SV_BASIC(SVUInt32, uint32_t, uint)
 	DECLAR_SV_BASIC(SVFloat, float, float)
+	DECLAR_SV_BASIC(SVDouble, double, double)
+
+
 }
 

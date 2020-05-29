@@ -48,4 +48,16 @@ float n_svfloat_value(void* cptr)
 	return *(float*)dv->view().data();
 }
 
+void* n_svdouble_create(double v)
+{
+	return new SVDouble(v);
+}
+
+double n_svdouble_value(void* cptr)
+{
+	ShaderViewable* dv = (ShaderViewable*)cptr;
+	return *(double*)dv->view().data();
+}
+
+
 
