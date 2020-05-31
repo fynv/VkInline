@@ -60,4 +60,148 @@ double n_svdouble_value(void* cptr)
 }
 
 
+void* n_svivec2_create(const int* v)
+{
+	return new SVIVec2(v);
+}
 
+void n_svivec2_value(void* cptr, int* v)
+{
+	ShaderViewable* dv = (ShaderViewable*)cptr;
+	auto view = dv->view();
+	memcpy(v, view.data(), sizeof(int) * 2);
+}
+
+void* n_svivec3_create(const int* v)
+{
+	return new SVIVec3(v);
+}
+
+void n_svivec3_value(void* cptr, int* v)
+{
+	ShaderViewable* dv = (ShaderViewable*)cptr;
+	auto view = dv->view();
+	memcpy(v, view.data(), sizeof(int) * 3);
+}
+
+void* n_svivec4_create(const int* v)
+{
+	return new SVIVec4(v);
+}
+
+void n_svivec4_value(void* cptr, int* v)
+{
+	ShaderViewable* dv = (ShaderViewable*)cptr;
+	auto view = dv->view();
+	memcpy(v, view.data(), sizeof(int) * 4);
+}
+
+
+void* n_svuvec2_create(const unsigned* v)
+{
+	return new SVUVec2(v);
+}
+
+void n_svuvec2_value(void* cptr, unsigned* v)
+{
+	ShaderViewable* dv = (ShaderViewable*)cptr;
+	auto view = dv->view();
+	memcpy(v, view.data(), sizeof(unsigned) * 2);
+}
+
+void* n_svuvec3_create(const unsigned* v)
+{
+	return new SVUVec3(v);
+}
+
+void n_svuvec3_value(void* cptr, unsigned* v)
+{
+	ShaderViewable* dv = (ShaderViewable*)cptr;
+	auto view = dv->view();
+	memcpy(v, view.data(), sizeof(unsigned) * 3);
+}
+
+void* n_svuvec4_create(const unsigned* v)
+{
+	return new SVUVec4(v);
+}
+
+void n_svuvec4_value(void* cptr, unsigned* v)
+{
+	ShaderViewable* dv = (ShaderViewable*)cptr;
+	auto view = dv->view();
+	memcpy(v, view.data(), sizeof(unsigned) * 4);
+}
+
+void* n_svvec2_create(const float* v)
+{
+	return new SVVec2(v);
+}
+
+void n_svvec2_value(void* cptr, float* v)
+{
+	ShaderViewable* dv = (ShaderViewable*)cptr;
+	auto view = dv->view();
+	memcpy(v, view.data(), sizeof(float) * 2);
+}
+
+void* n_svvec3_create(const float* v)
+{
+	return new SVVec3(v);
+}
+
+void n_svvec3_value(void* cptr, float* v)
+{
+	ShaderViewable* dv = (ShaderViewable*)cptr;
+	auto view = dv->view();
+	memcpy(v, view.data(), sizeof(float) * 3);
+}
+
+void* n_svvec4_create(const float* v)
+{
+	return new SVVec4(v);
+}
+
+void n_svvec4_value(void* cptr, float* v)
+{
+	ShaderViewable* dv = (ShaderViewable*)cptr;
+	auto view = dv->view();
+	memcpy(v, view.data(), sizeof(float) * 4);
+}
+
+
+void* n_svdvec2_create(const double* v)
+{
+	return new SVDVec2(v);
+}
+
+void n_svdvec2_value(void* cptr, double* v)
+{
+	ShaderViewable* dv = (ShaderViewable*)cptr;
+	auto view = dv->view();
+	memcpy(v, view.data(), sizeof(double) * 2);
+}
+
+void* n_svdvec3_create(const double* v)
+{
+	return new SVDVec3(v);
+}
+
+void n_svdvec3_value(void* cptr, double* v)
+{
+	ShaderViewable* dv = (ShaderViewable*)cptr;
+	auto view = dv->view();
+	memcpy(v, view.data(), sizeof(double) * 3);
+}
+
+void* n_svdvec4_create(const double* v)
+{
+	return new SVDVec4(v);
+}
+
+void n_svdvec4_value(void* cptr, double* v)
+{
+	ShaderViewable* dv = (ShaderViewable*)cptr;
+	auto view = dv->view();
+	memcpy(v, view.data(), sizeof(double) * 4);
+}

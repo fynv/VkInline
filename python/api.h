@@ -43,6 +43,34 @@ extern "C"
 	PY_VkInline_API void* n_svdouble_create(double v);
 	PY_VkInline_API double n_svdouble_value(void* cptr);
 
+	PY_VkInline_API void* n_svivec2_create(const int* v);
+	PY_VkInline_API void n_svivec2_value(void* cptr, int* v);
+	PY_VkInline_API void* n_svivec3_create(const int* v);
+	PY_VkInline_API void n_svivec3_value(void* cptr, int* v);
+	PY_VkInline_API void* n_svivec4_create(const int* v);
+	PY_VkInline_API void n_svivec4_value(void* cptr, int* v);
+
+	PY_VkInline_API void* n_svuvec2_create(const unsigned* v);
+	PY_VkInline_API void n_svuvec2_value(void* cptr, unsigned* v);
+	PY_VkInline_API void* n_svuvec3_create(const unsigned* v);
+	PY_VkInline_API void n_svuvec3_value(void* cptr, unsigned* v);
+	PY_VkInline_API void* n_svuvec4_create(const unsigned* v);
+	PY_VkInline_API void n_svuvec4_value(void* cptr, unsigned* v);
+
+	PY_VkInline_API void* n_svvec2_create(const float* v);
+	PY_VkInline_API void n_svvec2_value(void* cptr, float* v);
+	PY_VkInline_API void* n_svvec3_create(const float* v);
+	PY_VkInline_API void n_svvec3_value(void* cptr, float* v);
+	PY_VkInline_API void* n_svvec4_create(const float* v);
+	PY_VkInline_API void n_svvec4_value(void* cptr, float* v);
+
+	PY_VkInline_API void* n_svdvec2_create(const double* v);
+	PY_VkInline_API void n_svdvec2_value(void* cptr, double* v);
+	PY_VkInline_API void* n_svdvec3_create(const double* v);
+	PY_VkInline_API void n_svdvec3_value(void* cptr, double* v);
+	PY_VkInline_API void* n_svdvec4_create(const double* v);
+	PY_VkInline_API void n_svdvec4_value(void* cptr, double* v);
+
 	// SVBuffer
 	PY_VkInline_API void* n_svbuffer_create(const char* elem_type, unsigned long long size, void* hdata, int streamId);
 	PY_VkInline_API const char* n_svbuffer_name_elem_type(void* cptr);

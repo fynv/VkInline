@@ -12,7 +12,7 @@ setup(
 	keywords='GPU Vulkan Python',
 	packages=['VkInline'],
 	package_data = { 'VkInline': ['*.dll', '*.so']},
-	install_requires = ['cffi','numpy'],	
+	install_requires = ['cffi','numpy', 'pyglm'],	
 )
 
 

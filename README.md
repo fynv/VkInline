@@ -90,6 +90,7 @@ At Python side, VkInline depends on:
 * Python 3
 * cffi
 * numpy
+* pyglm
 
 ## License 
 

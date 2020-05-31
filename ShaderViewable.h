@@ -64,6 +64,27 @@ public:\
 	DECLAR_SV_BASIC(SVFloat, float, float)
 	DECLAR_SV_BASIC(SVDouble, double, double)
 
+#define DECLAR_SV_VEC(clsname, type_elem_host, type_dev, num_elem)\
+class clsname : public SomeShaderViewable\
+{\
+public:\
+	clsname(const type_elem_host* in) : SomeShaderViewable(#type_dev, in, sizeof(type_elem_host)*num_elem){}\
+};
+	DECLAR_SV_VEC(SVIVec2, int32_t, ivec2, 2)
+	DECLAR_SV_VEC(SVIVec3, int32_t, ivec3, 3)
+	DECLAR_SV_VEC(SVIVec4, int32_t, ivec4, 4)
+
+	DECLAR_SV_VEC(SVUVec2, uint32_t, uvec2, 2)
+	DECLAR_SV_VEC(SVUVec3, uint32_t, uvec3, 3)
+	DECLAR_SV_VEC(SVUVec4, uint32_t, uvec4, 4)
+	
+	DECLAR_SV_VEC(SVVec2, float, vec2, 2)
+	DECLAR_SV_VEC(SVVec3, float, vec3, 3)
+	DECLAR_SV_VEC(SVVec4, float, vec4, 4)
+
+	DECLAR_SV_VEC(SVDVec2, double, dvec2, 2)
+	DECLAR_SV_VEC(SVDVec3, double, dvec3, 3)
+	DECLAR_SV_VEC(SVDVec4, double, dvec4, 4)
 
 }
 
