@@ -205,3 +205,223 @@ void n_svdvec4_value(void* cptr, double* v)
 	auto view = dv->view();
 	memcpy(v, view.data(), sizeof(double) * 4);
 }
+
+void* n_svmat2x2_create(const float* v)
+{
+	return new SVMat2x2(v);
+}
+
+void n_svmat2x2_value(void* cptr, float* v)
+{
+	ShaderViewable* dv = (ShaderViewable*)cptr;
+	auto view = dv->view();
+	memcpy(v, view.data(), sizeof(float) * 2 * 2);
+}
+
+
+void* n_svmat2x3_create(const float* v)
+{
+	return new SVMat2x3(v);
+}
+
+void n_svmat2x3_value(void* cptr, float* v)
+{
+	ShaderViewable* dv = (ShaderViewable*)cptr;
+	auto view = dv->view();
+	memcpy(v, view.data(), sizeof(float) * 2 * 3);
+}
+
+void* n_svmat2x4_create(const float* v)
+{
+	return new SVMat2x4(v);
+}
+
+void n_svmat2x4_value(void* cptr, float* v)
+{
+	ShaderViewable* dv = (ShaderViewable*)cptr;
+	auto view = dv->view();
+	memcpy(v, view.data(), sizeof(float) * 2 * 4);
+}
+
+void* n_svmat3x2_create(const float* v)
+{
+	return new SVMat3x2(v);
+}
+
+void n_svmat3x2_value(void* cptr, float* v)
+{
+	ShaderViewable* dv = (ShaderViewable*)cptr;
+	auto view = dv->view();
+	memcpy(v, view.data(), sizeof(float) * 3 * 2);
+}
+
+void* n_svmat3x3_create(const float* v)
+{
+	return new SVMat3x3(v);
+}
+
+void n_svmat3x3_value(void* cptr, float* v)
+{
+	ShaderViewable* dv = (ShaderViewable*)cptr;
+	auto view = dv->view();
+	memcpy(v, view.data(), sizeof(float) * 3 * 3);
+}
+
+void* n_svmat3x4_create(const float* v)
+{
+	return new SVMat3x4(v);
+}
+
+void n_svmat3x4_value(void* cptr, float* v)
+{
+	ShaderViewable* dv = (ShaderViewable*)cptr;
+	auto view = dv->view();
+	memcpy(v, view.data(), sizeof(float) * 3 * 4);
+}
+
+void* n_svmat4x2_create(const float* v)
+{
+	return new SVMat4x2(v);
+}
+
+void n_svmat4x2_value(void* cptr, float* v)
+{
+	ShaderViewable* dv = (ShaderViewable*)cptr;
+	auto view = dv->view();
+	memcpy(v, view.data(), sizeof(float) * 4 * 2);
+}
+
+
+void* n_svmat4x3_create(const float* v)
+{
+	return new SVMat4x3(v);
+}
+
+void n_svmat4x3_value(void* cptr, float* v)
+{
+	ShaderViewable* dv = (ShaderViewable*)cptr;
+	auto view = dv->view();
+	memcpy(v, view.data(), sizeof(float) * 4 * 3);
+}
+
+void* n_svmat4x4_create(const float* v)
+{
+	return new SVMat4x4(v);
+}
+
+void n_svmat4x4_value(void* cptr, float* v)
+{
+	ShaderViewable* dv = (ShaderViewable*)cptr;
+	auto view = dv->view();
+	memcpy(v, view.data(), sizeof(float) * 4 * 4);
+}
+
+void* n_svdmat2x2_create(const double* v)
+{
+	return new SVDMat2x2(v);
+}
+
+void n_svdmat2x2_value(void* cptr, double* v)
+{
+	ShaderViewable* dv = (ShaderViewable*)cptr;
+	auto view = dv->view();
+	memcpy(v, view.data(), sizeof(double) * 2 * 2);
+}
+
+
+void* n_svdmat2x3_create(const double* v)
+{
+	return new SVDMat2x3(v);
+}
+
+void n_svdmat2x3_value(void* cptr, double* v)
+{
+	ShaderViewable* dv = (ShaderViewable*)cptr;
+	auto view = dv->view();
+	memcpy(v, view.data(), sizeof(double) * 2 * 3);
+}
+
+void* n_svdmat2x4_create(const double* v)
+{
+	return new SVDMat2x4(v);
+}
+
+void n_svdmat2x4_value(void* cptr, double* v)
+{
+	ShaderViewable* dv = (ShaderViewable*)cptr;
+	auto view = dv->view();
+	memcpy(v, view.data(), sizeof(double) * 2 * 4);
+}
+
+void* n_svdmat3x2_create(const double* v)
+{
+	return new SVDMat3x2(v);
+}
+
+void n_svdmat3x2_value(void* cptr, double* v)
+{
+	ShaderViewable* dv = (ShaderViewable*)cptr;
+	auto view = dv->view();
+	memcpy(v, view.data(), sizeof(double) * 3 * 2);
+}
+
+void* n_svdmat3x3_create(const double* v)
+{
+	return new SVDMat3x3(v);
+}
+
+void n_svdmat3x3_value(void* cptr, double* v)
+{
+	ShaderViewable* dv = (ShaderViewable*)cptr;
+	auto view = dv->view();
+	memcpy(v, view.data(), sizeof(double) * 3 * 3);
+}
+
+void* n_svdmat3x4_create(const double* v)
+{
+	return new SVDMat3x4(v);
+}
+
+void n_svdmat3x4_value(void* cptr, double* v)
+{
+	ShaderViewable* dv = (ShaderViewable*)cptr;
+	auto view = dv->view();
+	memcpy(v, view.data(), sizeof(double) * 3 * 4);
+}
+
+void* n_svdmat4x2_create(const double* v)
+{
+	return new SVDMat4x2(v);
+}
+
+void n_svdmat4x2_value(void* cptr, double* v)
+{
+	ShaderViewable* dv = (ShaderViewable*)cptr;
+	auto view = dv->view();
+	memcpy(v, view.data(), sizeof(double) * 4 * 2);
+}
+
+
+void* n_svdmat4x3_create(const double* v)
+{
+	return new SVDMat4x3(v);
+}
+
+void n_svdmat4x3_value(void* cptr, double* v)
+{
+	ShaderViewable* dv = (ShaderViewable*)cptr;
+	auto view = dv->view();
+	memcpy(v, view.data(), sizeof(double) * 4 * 3);
+}
+
+void* n_svdmat4x4_create(const double* v)
+{
+	return new SVDMat4x4(v);
+}
+
+void n_svdmat4x4_value(void* cptr, double* v)
+{
+	ShaderViewable* dv = (ShaderViewable*)cptr;
+	auto view = dv->view();
+	memcpy(v, view.data(), sizeof(double) * 4 * 4);
+}

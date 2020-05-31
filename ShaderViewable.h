@@ -86,5 +86,24 @@ public:\
 	DECLAR_SV_VEC(SVDVec3, double, dvec3, 3)
 	DECLAR_SV_VEC(SVDVec4, double, dvec4, 4)
 
+	DECLAR_SV_VEC(SVMat2x2, float, mat2x2, 2 * 2)
+	DECLAR_SV_VEC(SVMat2x3, float, mat2x3, 2 * 3)
+	DECLAR_SV_VEC(SVMat2x4, float, mat2x4, 2 * 4)
+	DECLAR_SV_VEC(SVMat3x2, float, mat3x2, 3 * 2)
+	DECLAR_SV_VEC(SVMat3x3, float, mat3x3, 3 * 3)
+	DECLAR_SV_VEC(SVMat3x4, float, mat3x4, 3 * 4)
+	DECLAR_SV_VEC(SVMat4x2, float, mat4x2, 4 * 2)
+	DECLAR_SV_VEC(SVMat4x3, float, mat4x3, 4 * 3)
+	DECLAR_SV_VEC(SVMat4x4, float, mat4x4, 4 * 4)
+
+	DECLAR_SV_VEC(SVDMat2x2, double, dmat2x2, 2 * 2)
+	DECLAR_SV_VEC(SVDMat2x3, double, dmat2x3, 2 * 3)
+	DECLAR_SV_VEC(SVDMat2x4, double, dmat2x4, 2 * 4)
+	DECLAR_SV_VEC(SVDMat3x2, double, dmat3x2, 3 * 2)
+	DECLAR_SV_VEC(SVDMat3x3, double, dmat3x3, 3 * 3)
+	DECLAR_SV_VEC(SVDMat3x4, double, dmat3x4, 3 * 4)
+	DECLAR_SV_VEC(SVDMat4x2, double, dmat4x2, 4 * 2)
+	DECLAR_SV_VEC(SVDMat4x3, double, dmat4x3, 4 * 3)
+	DECLAR_SV_VEC(SVDMat4x4, double, dmat4x4, 4 * 4)
 }
 

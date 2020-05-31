@@ -87,6 +87,80 @@ void set_value(in Comb_#hash# vec, in uint id, in {0} value)
             nptype = np.float64
             shape[2] = 4
 
+        elif elem_type=='mat2x2':
+            nptype = np.float32
+            shape[1] = 2
+            shape[2] = 2
+        elif elem_type=='mat2x3':
+            nptype = np.float32
+            shape[1] = 2
+            shape[2] = 3
+        elif elem_type=='mat2x4':
+            nptype = np.float32
+            shape[1] = 2
+            shape[2] = 4
+        elif elem_type=='mat3x2':
+            nptype = np.float32
+            shape[1] = 3
+            shape[2] = 2
+        elif elem_type=='mat3x3':
+            nptype = np.float32
+            shape[1] = 3
+            shape[2] = 3
+        elif elem_type=='mat3x4':
+            nptype = np.float32
+            shape[1] = 3
+            shape[2] = 4
+        elif elem_type=='mat4x2':
+            nptype = np.float32
+            shape[1] = 4
+            shape[2] = 2
+        elif elem_type=='mat4x3':
+            nptype = np.float32
+            shape[1] = 4
+            shape[2] = 3
+        elif elem_type=='mat4x4':
+            nptype = np.float32
+            shape[1] = 4
+            shape[2] = 4
+
+        elif elem_type=='dmat2x2':
+            nptype = np.float64
+            shape[1] = 2
+            shape[2] = 2
+        elif elem_type=='dmat2x3':
+            nptype = np.float64
+            shape[1] = 2
+            shape[2] = 3
+        elif elem_type=='dmat2x4':
+            nptype = np.float64
+            shape[1] = 2
+            shape[2] = 4
+        elif elem_type=='dmat3x2':
+            nptype = np.float64
+            shape[1] = 3
+            shape[2] = 2
+        elif elem_type=='dmat3x3':
+            nptype = np.float64
+            shape[1] = 3
+            shape[2] = 3
+        elif elem_type=='dmat3x4':
+            nptype = np.float64
+            shape[1] = 3
+            shape[2] = 4
+        elif elem_type=='dmat4x2':
+            nptype = np.float64
+            shape[1] = 4
+            shape[2] = 2
+        elif elem_type=='dmat4x3':
+            nptype = np.float64
+            shape[1] = 4
+            shape[2] = 3
+        elif elem_type=='dmat4x4':
+            nptype = np.float64
+            shape[1] = 4
+            shape[2] = 4
+
         if end == -1:
             end = self.size()
         shape[0] = end - begin
@@ -96,7 +170,8 @@ void set_value(in Comb_#hash# vec, in uint id, in {0} value)
             else: # vec
                 ret = np.empty((shape[0], shape[2]), dtype=nptype)
         else: # matrix
-            pass
+            ret = np.empty(shape, dtype=nptype)
+
         self.m_buf.to_host(ret.__array_interface__['data'][0], begin, end, streamId)
         return ret
 
@@ -140,6 +215,30 @@ def device_vector_from_numpy(nparr, streamId=0):
             elif shape[2] == 4:
                 elem_type = 'vec4'
 
+        elif shape[1]==2:
+            if shape[2] == 2:
+                elem_type = 'mat2x2'
+            elif shape[2] == 3:
+                elem_type = 'mat2x3'
+            elif shape[2] == 4:
+                elem_type = 'mat2x4'
+
+        elif shape[1]==3:
+            if shape[2] == 2:
+                elem_type = 'mat3x2'
+            elif shape[2] == 3:
+                elem_type = 'mat3x3'
+            elif shape[2] == 4:
+                elem_type = 'mat3x4'
+
+        elif shape[1]==4:
+            if shape[2] == 2:
+                elem_type = 'mat4x2'
+            elif shape[2] == 3:
+                elem_type = 'mat4x3'
+            elif shape[2] == 4:
+                elem_type = 'mat4x4'
+
     elif nparr.dtype == np.float64:
         if shape[1]==1:
             if shape[2] == 1:
@@ -150,6 +249,30 @@ def device_vector_from_numpy(nparr, streamId=0):
                 elem_type = 'dvec3'
             elif shape[2] == 4:
                 elem_type = 'dvec4'
+
+        elif shape[1]==2:
+            if shape[2] == 2:
+                elem_type = 'dmat2x2'
+            elif shape[2] == 3:
+                elem_type = 'dmat2x3'
+            elif shape[2] == 4:
+                elem_type = 'dmat2x4'
+
+        elif shape[1]==3:
+            if shape[2] == 2:
+                elem_type = 'dmat3x2'
+            elif shape[2] == 3:
+                elem_type = 'dmat3x3'
+            elif shape[2] == 4:
+                elem_type = 'dmat3x4'
+
+        elif shape[1]==4:
+            if shape[2] == 2:
+                elem_type = 'dmat4x2'
+            elif shape[2] == 3:
+                elem_type = 'dmat4x3'
+            elif shape[2] == 4:
+                elem_type = 'dmat4x4'                
 
     ptr_host_data = nparr.__array_interface__['data'][0]
     return SVVector(elem_type, shape[0], ptr_host_data, streamId)

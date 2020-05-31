@@ -70,6 +70,44 @@ void n_svdvec3_value(void* cptr, double* v);
 void* n_svdvec4_create(const double* v);
 void n_svdvec4_value(void* cptr, double* v);
 
+void* n_svmat2x2_create(const float* v);
+void n_svmat2x2_value(void* cptr, float* v);
+void* n_svmat2x3_create(const float* v);
+void n_svmat2x3_value(void* cptr, float* v);
+void* n_svmat2x4_create(const float* v);
+void n_svmat2x4_value(void* cptr, float* v);
+void* n_svmat3x2_create(const float* v);
+void n_svmat3x2_value(void* cptr, float* v);
+void* n_svmat3x3_create(const float* v);
+void n_svmat3x3_value(void* cptr, float* v);
+void* n_svmat3x4_create(const float* v);
+void n_svmat3x4_value(void* cptr, float* v);
+void* n_svmat4x2_create(const float* v);
+void n_svmat4x2_value(void* cptr, float* v);
+void* n_svmat4x3_create(const float* v);
+void n_svmat4x3_value(void* cptr, float* v);
+void* n_svmat4x4_create(const float* v);
+void n_svmat4x4_value(void* cptr, float* v);
+
+void* n_svdmat2x2_create(const double* v);
+void n_svdmat2x2_value(void* cptr, double* v);
+void* n_svdmat2x3_create(const double* v);
+void n_svdmat2x3_value(void* cptr, double* v);
+void* n_svdmat2x4_create(const double* v);
+void n_svdmat2x4_value(void* cptr, double* v);
+void* n_svdmat3x2_create(const double* v);
+void n_svdmat3x2_value(void* cptr, double* v);
+void* n_svdmat3x3_create(const double* v);
+void n_svdmat3x3_value(void* cptr, double* v);
+void* n_svdmat3x4_create(const double* v);
+void n_svdmat3x4_value(void* cptr, double* v);
+void* n_svdmat4x2_create(const double* v);
+void n_svdmat4x2_value(void* cptr, double* v);
+void* n_svdmat4x3_create(const double* v);
+void n_svdmat4x3_value(void* cptr, double* v);
+void* n_svdmat4x4_create(const double* v);
+void n_svdmat4x4_value(void* cptr, double* v);
+
 // SVBuffer
 void* n_svbuffer_create(const char* elem_type, unsigned long long size, void* hdata, int streamId);
 const char* n_svbuffer_name_elem_type(void* cptr);
