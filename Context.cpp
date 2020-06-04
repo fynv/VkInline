@@ -97,6 +97,63 @@ namespace VkInline
 		context->Wait(streamId);
 	}
 
+	int Texture2D::width() const
+	{
+		return m_tex->width();
+	}
+
+	int Texture2D::height() const
+	{
+		return m_tex->height();
+	}
+
+	unsigned Texture2D::pixel_size() const
+	{
+		return m_tex->pixel_size();
+	}
+
+	unsigned Texture2D::channel_count() const
+	{
+		return m_tex->channel_count();
+	}
+
+	unsigned Texture2D::vkformat() const
+	{
+		return m_tex->format();
+	}
+
+	Texture2D::Texture2D(int width, int height, unsigned vkformat, bool isDepth, bool isStencil)
+	{
+		VkImageAspectFlags aspect = 0;
+		if (isDepth) aspect |= VK_IMAGE_ASPECT_DEPTH_BIT;
+		if (isStencil) aspect |= VK_IMAGE_ASPECT_STENCIL_BIT;
+		if (aspect == 0) aspect |= VK_IMAGE_ASPECT_COLOR_BIT;
+
+		VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+		if (isDepth || isStencil)
+			usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+		else
+			usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		m_tex = new Internal::Texture2D(width, height, (VkFormat)vkformat, aspect, usage);
+
+	}
+
+	Texture2D::~Texture2D()
+	{
+		delete m_tex;
+	}
+
+	void Texture2D::upload(const void* hdata, int streamId)
+	{
+		m_tex->upload(hdata, streamId);
+	}
+
+	void Texture2D::download(void* hdata, int streamId) const
+	{
+		m_tex->download(hdata, streamId);
+	}
+
+
 	Computer::Computer(const std::vector<const char*>& param_names, const char* code_body) :
 		m_param_names(param_names.size()), m_code_body(code_body)
 	{

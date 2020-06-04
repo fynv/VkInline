@@ -16,6 +16,7 @@ thirdparty/SPIRV-Cross
 thirdparty/Vulkan-Headers/include
 thirdparty/crc64
 thirdparty/unqlite
+thirdparty/Vulkan_utils
 .
 ./internal
 )
@@ -40,6 +41,7 @@ add_subdirectory(thirdparty/SPIRV-Cross)
 
 set (LIB_SOURCES
 thirdparty/crc64/crc64.cpp
+thirdparty/Vulkan_utils/vk_format_utils.cpp
 internal/internal_context.cpp
 glslc.cpp
 Context.cpp

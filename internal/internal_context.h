@@ -113,6 +113,37 @@ namespace VkInline
 
 		};
 
+		class Texture2D
+		{
+		public:
+			int width() const { return m_width; }
+			int height() const { return m_height; }
+			unsigned pixel_size() const;
+			unsigned channel_count() const;
+			const VkFormat& format() const { return m_format; }
+			const VkImageAspectFlags& aspect() const { return m_aspect; }
+			const VkImage& image() const { return m_image; }
+			const VkDeviceMemory& memory() const { return m_mem; }
+			const VkImageView& view() const { return m_view; }
+
+			Texture2D(int width, int height, VkFormat format, VkImageAspectFlags aspectFlags, VkImageUsageFlags usage);
+			~Texture2D();
+
+			void upload(const void* hdata, int streamId = 0);
+			void download(void* hdata, int streamId = 0) const;
+
+
+		private:
+			int m_width;
+			int m_height;
+			VkFormat m_format;
+			VkImageAspectFlags m_aspect;
+			VkImage m_image;
+			VkDeviceMemory m_mem;
+			VkImageView m_view;
+
+		};
+
 		class ComputePipeline
 		{
 		public:

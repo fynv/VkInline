@@ -6,6 +6,11 @@
 
 namespace VkInline
 {
+	namespace Internal
+	{
+		class Texture2D;
+	}
+
 	struct dim_type
 	{
 		unsigned int x, y, z;
@@ -23,6 +28,28 @@ namespace VkInline
 	std::string Add_Dynamic_Code(const char* code);
 
 	void Wait(int streamId = 0);
+
+	class Texture2D
+	{
+	public:
+		int width() const;
+		int height() const;
+		unsigned pixel_size() const;
+		unsigned channel_count() const;
+		unsigned vkformat() const;
+
+		Internal::Texture2D* internal() { return m_tex; }
+		const Internal::Texture2D* internal() const { return m_tex; }
+
+		Texture2D(int width, int height, unsigned vkformat, bool isDepth = false, bool isStencil = false);
+		~Texture2D();
+
+		void upload(const void* hdata, int streamId = 0);
+		void download(void* hdata, int streamId = 0) const;
+
+	private:
+		Internal::Texture2D* m_tex;
+	};
 
 	class Computer
 	{
