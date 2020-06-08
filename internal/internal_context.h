@@ -190,7 +190,6 @@ namespace VkInline
 			ComputePipeline(const std::vector<unsigned>& spv);
 			~ComputePipeline();
 
-			const VkShaderModule& shader() const { return m_shaderModule; }
 			const VkDescriptorSetLayout& layout_desc() const { return m_descriptorSetLayout; }
 			const VkPipelineLayout& layout_pipeline() const { return m_pipelineLayout; }
 			const VkPipeline& pipeline() const { return m_pipeline; }
@@ -200,7 +199,6 @@ namespace VkInline
 			void dispatch(const CommandBuffer& cmdbuf, unsigned dim_x, unsigned dim_y, unsigned dim_z) const;
 
 		private:
-			VkShaderModule m_shaderModule;
 			VkDescriptorSetLayout m_descriptorSetLayout;
 			VkPipelineLayout m_pipelineLayout;
 			VkPipeline m_pipeline;

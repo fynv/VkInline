@@ -753,12 +753,13 @@ namespace VkInline
 		ComputePipeline::ComputePipeline(const std::vector<unsigned>& spv)
 		{
 			const Context* ctx = Context::get_context();
+			VkShaderModule shader_module;
 			{
 				VkShaderModuleCreateInfo createInfo = {};
 				createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 				createInfo.codeSize = spv.size() * sizeof(unsigned);
 				createInfo.pCode = reinterpret_cast<const uint32_t*>(spv.data());
-				vkCreateShaderModule(ctx->device(), &createInfo, nullptr, &m_shaderModule);
+				vkCreateShaderModule(ctx->device(), &createInfo, nullptr, &shader_module);
 			}
 			{
 				VkDescriptorSetLayoutBinding descriptorSetLayoutBindings[1];
@@ -786,7 +787,7 @@ namespace VkInline
 				VkPipelineShaderStageCreateInfo computeShaderStageInfo = {};
 				computeShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 				computeShaderStageInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-				computeShaderStageInfo.module = m_shaderModule;
+				computeShaderStageInfo.module = shader_module;
 				computeShaderStageInfo.pName = "main";
 
 				VkComputePipelineCreateInfo pipelineInfo = {};
@@ -798,6 +799,8 @@ namespace VkInline
 			}
 			m_recyclers = new std::unordered_map<std::thread::id, CommandBufferRecycler*>;
 			m_mu_streams = new std::shared_mutex;
+
+			vkDestroyShaderModule(ctx->device(), shader_module, nullptr);
 		}
 
 		ComputePipeline::~ComputePipeline()
@@ -813,8 +816,7 @@ namespace VkInline
 			const Context* ctx = Context::get_context();			
 			vkDestroyPipeline(ctx->device(), m_pipeline, nullptr);
 			vkDestroyPipelineLayout(ctx->device(), m_pipelineLayout, nullptr);
-			vkDestroyDescriptorSetLayout(ctx->device(), m_descriptorSetLayout, nullptr);
-			vkDestroyShaderModule(ctx->device(), m_shaderModule, nullptr);		
+			vkDestroyDescriptorSetLayout(ctx->device(), m_descriptorSetLayout, nullptr);		
 		}
 
 		CommandBufferRecycler* ComputePipeline::recycler() const
