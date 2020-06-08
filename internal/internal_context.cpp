@@ -151,8 +151,8 @@ namespace VkInline
 		{
 			if (!_init_vulkan()) exit(0);
 			m_mu_queue = new std::mutex;
-			m_streams = new std::unordered_map<int, Stream>;
-			m_mu_streams = new std::mutex;
+			m_streams = new std::unordered_map<std::thread::id, Stream*>;
+			m_mu_streams = new std::shared_mutex;
 		}
 
 		Context::~Context()
@@ -160,15 +160,11 @@ namespace VkInline
 			auto iter = m_streams->begin();
 			while (iter != m_streams->end())
 			{
-				while (iter->second.m_queue_recycle.size() > 0)
-				{
-					CommandBuffer cb = iter->second.m_queue_recycle.front();
-					iter->second.m_queue_recycle.pop();
-					vkDestroyFence(m_device, cb.m_fence, nullptr);
-				}
-				vkDestroyCommandPool(m_device, iter->second.m_commandPool, nullptr);
+				vkDestroyCommandPool(m_device, iter->second->m_commandPool, nullptr);
+				delete iter->second;
 				iter++;
 			}
+
 			delete m_mu_streams;
 			delete m_streams;
 			delete m_mu_queue;
@@ -180,88 +176,151 @@ namespace VkInline
 			vkDestroyInstance(m_instance, nullptr);
 		}
 
-		Context::Stream& Context::_stream(int i) const
+		Context::Stream* Context::_stream(std::thread::id threadId) const
 		{
-			std::unique_lock<std::mutex> locker(*m_mu_streams);
-			auto iter = m_streams->find(i);
-			if (iter != m_streams->end()) return iter->second;
-			Context::Stream& stream = (*m_streams)[i];
-			locker.unlock();
+			{
+				std::shared_lock<std::shared_mutex> locker(*m_mu_streams);
+				auto iter = m_streams->find(threadId);
+				if (iter != m_streams->end()) return iter->second;
+			}
+			Context::Stream* stream = new Context::Stream;
+			{
+				std::unique_lock<std::shared_mutex> locker(*m_mu_streams);
+				(*m_streams)[threadId] = stream;
+			}
+
 			VkCommandPoolCreateInfo poolInfo = {};
 			poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 			poolInfo.queueFamilyIndex = m_queueFamily;
 			poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-			vkCreateCommandPool(m_device, &poolInfo, nullptr, &stream.m_commandPool);
+			vkCreateCommandPool(m_device, &poolInfo, nullptr, &stream->m_commandPool);
 			return stream;
 		}
 
-		CommandBuffer Context::NewCommandBuffer(int streamId) const
+		Context::Stream* Context::stream() const
 		{
-			CommandBuffer ret;
-			ret.m_streamId = streamId;
+			return _stream(std::this_thread::get_id());
+		}
 
-			Context::Stream& s = _stream(streamId);
+		CommandBuffer::CommandBuffer()
+		{
+			const Context* ctx = Context::get_context();
+			m_stream = ctx->stream();
 
-			if (s.m_queue_recycle.size() > 0)
+			VkCommandBufferAllocateInfo allocInfo = {};
+			allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+			allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+			allocInfo.commandPool = m_stream->m_commandPool;
+			allocInfo.commandBufferCount = 1;
+
 			{
-				ret = s.m_queue_recycle.front();
-				s.m_queue_recycle.pop();
+				std::unique_lock<std::mutex> locker(m_stream->m_mutex_pool);
+				vkAllocateCommandBuffers(ctx->device(), &allocInfo, &m_buf);
 			}
-			else
-			{
-				VkCommandBufferAllocateInfo allocInfo = {};
-				allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-				allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-				allocInfo.commandPool = s.m_commandPool;
-				allocInfo.commandBufferCount = 1;
-				vkAllocateCommandBuffers(m_device, &allocInfo, &ret.m_buf);
-				VkFenceCreateInfo fenceInfo = {};
-				fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-				vkCreateFence(m_device, &fenceInfo, nullptr, &ret.m_fence);
-			}
+
+			VkFenceCreateInfo fenceInfo = {};
+			fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+			vkCreateFence(ctx->device(), &fenceInfo, nullptr, &m_fence);
 
 			VkCommandBufferBeginInfo beginInfo = {};
 			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 			beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-			vkBeginCommandBuffer(ret.m_buf, &beginInfo);
-			return ret;
+			vkBeginCommandBuffer(m_buf, &beginInfo);
+
 		}
 
-		void Context::SubmitCommandBuffer(const CommandBuffer& cmdBuf, size_t n) const
+		CommandBuffer::~CommandBuffer()
 		{
-			vkEndCommandBuffer(cmdBuf.m_buf);
-			Context::Stream& s = _stream(cmdBuf.m_streamId);
+			const Context* ctx = Context::get_context();
+			{
+				std::unique_lock<std::mutex> locker(m_stream->m_mutex_pool);
+				vkFreeCommandBuffers(ctx->device(), m_stream->m_commandPool, 1, &m_buf);
+			}
+			vkDestroyFence(ctx->device(), m_fence, nullptr);
+		}
+
+		void CommandBuffer::Recycle()
+		{
+			VkCommandBufferBeginInfo beginInfo = {};
+			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+			beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+			vkBeginCommandBuffer(m_buf, &beginInfo);
+		}
+
+		void Context::SubmitCommandBuffer(CommandBuffer* cmdBuf, size_t n) const
+		{
+			vkEndCommandBuffer(cmdBuf->buf());
+			Context::Stream* s = stream();
 			VkSubmitInfo submitInfo = {};
 			submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 			submitInfo.commandBufferCount = 1;
-			submitInfo.pCommandBuffers = &cmdBuf.m_buf;
+			submitInfo.pCommandBuffers = &cmdBuf->buf();
 
 			{
 				std::unique_lock<std::mutex> locker(*m_mu_queue);
 				for (size_t i = 0; i < n; i++)
 				{
 					VkFence f = 0;
-					if (i == n - 1) f = cmdBuf.m_fence;
+					if (i == n - 1) f = cmdBuf->fence();
 					vkQueueSubmit(m_queue, 1, &submitInfo, f);
 				}
 			}
-			s.m_queue_wait.push(cmdBuf);
+			s->m_queue_wait.push(cmdBuf);
 		}
 
-		void Context::Wait(int streamId) const
+		void Context::WaitUtil(CommandBuffer* lastCmdBuf) const
 		{
-			Context::Stream& s = _stream(streamId);
-			while (s.m_queue_wait.size() > 0)
+			Context::Stream* s = stream();
+			while (s->m_queue_wait.size() > 0)
 			{
-				CommandBuffer cb = s.m_queue_wait.front();
-				s.m_queue_wait.pop();
-				vkWaitForFences(m_device, 1, &cb.m_fence, VK_TRUE, UINT64_MAX);
-				vkResetFences(m_device, 1, &cb.m_fence);
-				vkResetCommandBuffer(cb.m_buf, 0);
-				s.m_queue_recycle.push(cb);
+				CommandBuffer* cb = s->m_queue_wait.front();
+				s->m_queue_wait.pop();
+				vkWaitForFences(m_device, 1, &cb->fence(), VK_TRUE, UINT64_MAX);
+				vkResetFences(m_device, 1, &cb->fence());
+				vkResetCommandBuffer(cb->buf(), 0);
+				cb->Recycle();
+				if (cb == lastCmdBuf) return;
 			}
 		}
 
+		void Context::Wait() const
+		{
+			WaitUtil(nullptr);
+		}
+
+		CommandBufferRecycler::CommandBufferRecycler() { }
+
+		CommandBufferRecycler::~CommandBufferRecycler()
+		{
+			while (m_queue_recycle.size() > 0)
+			{
+				CommandBuffer* cb = m_queue_recycle.front();
+				m_queue_recycle.pop();
+				delete cb;
+			}
+		}
+
+		void CommandBufferRecycler::RecycleCommandBuffer(CommandBuffer* cmdbuf)
+		{
+			m_queue_recycle.push(cmdbuf);
+		}
+
+		CommandBuffer* CommandBufferRecycler::RetriveCommandBuffer()
+		{
+			CommandBuffer* ret = nullptr;
+			if (m_queue_recycle.size() > 0)
+			{
+				ret = m_queue_recycle.front();
+				m_queue_recycle.pop();
+
+				VkCommandBufferBeginInfo beginInfo = {};
+				beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+				beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+				vkBeginCommandBuffer(ret->buf(), &beginInfo);
+
+			}
+			return ret;
+		}
 
 		VkDeviceAddress Buffer::get_device_address() const
 		{
@@ -331,7 +390,6 @@ namespace VkInline
 			vkFreeMemory(ctx->device(), m_mem, nullptr);
 		}
 
-
 		UploadBuffer::UploadBuffer(VkDeviceSize size, VkBufferUsageFlags usage) :
 			Buffer(size, usage | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) {	}
 
@@ -378,97 +436,82 @@ namespace VkInline
 			vkUnmapMemory(ctx->device(), m_mem);
 		}
 
-
 		DeviceBuffer::DeviceBuffer(VkDeviceSize size, VkBufferUsageFlags usage) :
 			Buffer(size, usage | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {}
 
 		DeviceBuffer::~DeviceBuffer() {}
 
-		void DeviceBuffer::upload(const void* hdata, int streamId)
+		class CommandBuf_DevBufUpload : public AutoCommandBuffer
 		{
-			UploadBuffer staging_buf(m_size);
-			staging_buf.upload(hdata);
+		public:
+			CommandBuf_DevBufUpload(VkDeviceSize size, VkBuffer buf) : m_staging_buf(size)
+			{
+				m_staging_buf.zero();
+				_upload(size, buf);
+			}
 
+			CommandBuf_DevBufUpload(VkDeviceSize size, VkBuffer buf, const void* hdata) : m_staging_buf(size)
+			{
+				m_staging_buf.upload(hdata);
+				_upload(size, buf);
+			}
+
+		private:
+			void _upload(VkDeviceSize size, VkBuffer buf)
+			{
+				VkBufferMemoryBarrier barriers[1];
+				barriers[0] = {};
+				barriers[0].sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+				barriers[0].buffer = buf;
+				barriers[0].offset = 0;
+				barriers[0].size = VK_WHOLE_SIZE;
+				barriers[0].srcAccessMask = 0;
+				barriers[0].dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+				barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+				barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+				vkCmdPipelineBarrier(
+					m_buf,
+					VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+					VK_PIPELINE_STAGE_TRANSFER_BIT,
+					0,
+					0, nullptr,
+					1, barriers,
+					0, nullptr
+				);
+
+				VkBufferCopy copyRegion = {};
+				copyRegion.srcOffset = 0;
+				copyRegion.dstOffset = 0;
+				copyRegion.size = size;
+				vkCmdCopyBuffer(m_buf, m_staging_buf.buf(), buf, 1, &copyRegion);
+			}
+
+			UploadBuffer m_staging_buf;
+		};
+
+
+		void DeviceBuffer::upload(const void* hdata)
+		{
+			auto cmdBuf = new CommandBuf_DevBufUpload(m_size, m_buf, hdata);
 			const Context* ctx = Context::get_context();
-			CommandBuffer cmdBuf = ctx->NewCommandBuffer(streamId);
-
-			VkBufferMemoryBarrier barriers[1];
-			barriers[0] = {};
-			barriers[0].sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-			barriers[0].buffer = m_buf;
-			barriers[0].offset = 0;
-			barriers[0].size = VK_WHOLE_SIZE;
-			barriers[0].srcAccessMask = 0;
-			barriers[0].dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-			barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-
-			vkCmdPipelineBarrier(
-				cmdBuf.m_buf,
-				VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-				VK_PIPELINE_STAGE_TRANSFER_BIT,
-				0,
-				0, nullptr,
-				1, barriers,
-				0, nullptr
-			);
-
-			VkBufferCopy copyRegion = {};
-			copyRegion.srcOffset = 0;
-			copyRegion.dstOffset = 0;
-			copyRegion.size = m_size;
-			vkCmdCopyBuffer(cmdBuf.m_buf, staging_buf.buf(), m_buf, 1, &copyRegion);
 			ctx->SubmitCommandBuffer(cmdBuf);
-			ctx->Wait(streamId);
 		}
 
-		void DeviceBuffer::zero(int streamId)
+		void DeviceBuffer::zero()
 		{
-			UploadBuffer staging_buf(m_size);
-			staging_buf.zero();
-
+			auto cmdBuf = new CommandBuf_DevBufUpload(m_size, m_buf);
 			const Context* ctx = Context::get_context();
-			CommandBuffer cmdBuf = ctx->NewCommandBuffer(streamId);
-
-			VkBufferMemoryBarrier barriers[1];
-			barriers[0] = {};
-			barriers[0].sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-			barriers[0].buffer = m_buf;
-			barriers[0].offset = 0;
-			barriers[0].size = VK_WHOLE_SIZE;
-			barriers[0].srcAccessMask = 0;
-			barriers[0].dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-			barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-
-			vkCmdPipelineBarrier(
-				cmdBuf.m_buf,
-				VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-				VK_PIPELINE_STAGE_TRANSFER_BIT,
-				0,
-				0, nullptr,
-				1, barriers,
-				0, nullptr
-			);
-
-			VkBufferCopy copyRegion = {};
-			copyRegion.srcOffset = 0;
-			copyRegion.dstOffset = 0;
-			copyRegion.size = m_size;
-			vkCmdCopyBuffer(cmdBuf.m_buf, staging_buf.buf(), m_buf, 1, &copyRegion);
 			ctx->SubmitCommandBuffer(cmdBuf);
-			ctx->Wait(streamId);
 		}
 
-		void DeviceBuffer::download(void* hdata, VkDeviceSize begin, VkDeviceSize end, int streamId) const
+		void DeviceBuffer::download(void* hdata, VkDeviceSize begin, VkDeviceSize end) const
 		{
 			if (end > m_size) end = m_size;
 			if (end <= begin) return;
 
 			DownloadBuffer staging_buf(end - begin);
-
-			const Context* ctx = Context::get_context();
-			CommandBuffer cmdBuf = ctx->NewCommandBuffer(streamId);
+			auto cmdBuf = new AutoCommandBuffer;
 
 			VkBufferMemoryBarrier barriers[1];
 			barriers[0] = {};
@@ -482,7 +525,7 @@ namespace VkInline
 			barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 
 			vkCmdPipelineBarrier(
-				cmdBuf.m_buf,
+				cmdBuf->buf(),
 				VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
 				VK_PIPELINE_STAGE_TRANSFER_BIT,
 				0,
@@ -495,9 +538,10 @@ namespace VkInline
 			copyRegion.srcOffset = begin;
 			copyRegion.dstOffset = 0;
 			copyRegion.size = end - begin;
-			vkCmdCopyBuffer(cmdBuf.m_buf, m_buf, staging_buf.buf(), 1, &copyRegion);
+			vkCmdCopyBuffer(cmdBuf->buf(), m_buf, staging_buf.buf(), 1, &copyRegion);
+			const Context* ctx = Context::get_context();
 			ctx->SubmitCommandBuffer(cmdBuf);
-			ctx->Wait(streamId);
+			ctx->Wait();
 
 			staging_buf.download(hdata);
 		}
@@ -587,69 +631,75 @@ namespace VkInline
 			vkFreeMemory(ctx->device(), m_mem, nullptr);
 		}
 
-		void Texture2D::upload(const void* hdata, int streamId)
+		class CommandBuf_TexUpload : public AutoCommandBuffer
 		{
-			if (m_width == 0 || m_height == 0) return;
-			UploadBuffer staging_buf(m_width*m_height*pixel_size());
-			staging_buf.upload(hdata);
+		public:
+			CommandBuf_TexUpload(int width, int height, unsigned pixel_size, VkImage image, VkImageAspectFlags aspectFlags, const void* hdata)
+				: m_staging_buf(width*height*pixel_size)
+			{
+				m_staging_buf.upload(hdata);
 
+				VkImageMemoryBarrier barrier = {};
+				barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+				barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+				barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+				barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+				barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+				barrier.image = image;
+				barrier.subresourceRange.aspectMask = aspectFlags;
+				barrier.subresourceRange.baseMipLevel = 0;
+				barrier.subresourceRange.levelCount = 1;
+				barrier.subresourceRange.baseArrayLayer = 0;
+				barrier.subresourceRange.layerCount = 1;
+				barrier.srcAccessMask = 0;
+				barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+				vkCmdPipelineBarrier(
+					m_buf,
+					VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+					VK_PIPELINE_STAGE_TRANSFER_BIT,
+					0,
+					0, nullptr,
+					0, nullptr,
+					1, &barrier
+				);
+
+				VkBufferImageCopy region = {};
+				region.imageSubresource.aspectMask = aspectFlags;
+				region.imageSubresource.layerCount = 1;
+				region.imageExtent = {
+					(uint32_t)width,
+					(uint32_t)height,
+					1
+				};
+
+				vkCmdCopyBufferToImage(
+					m_buf,
+					m_staging_buf.buf(),
+					image,
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+					1,
+					&region
+				);
+			}
+
+		private:
+			UploadBuffer m_staging_buf;
+		};
+
+		void Texture2D::upload(const void* hdata)
+		{
+			auto cmdBuf = new CommandBuf_TexUpload(m_width, m_height, pixel_size(), m_image, m_aspect, hdata);
 			const Context* ctx = Context::get_context();
-			CommandBuffer cmdBuf = ctx->NewCommandBuffer(streamId);
-
-			VkImageMemoryBarrier barrier = {};
-			barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-			barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barrier.image = m_image;
-			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			barrier.subresourceRange.baseMipLevel = 0;
-			barrier.subresourceRange.levelCount = 1;
-			barrier.subresourceRange.baseArrayLayer = 0;
-			barrier.subresourceRange.layerCount = 1;
-			barrier.srcAccessMask = 0;
-			barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-			vkCmdPipelineBarrier(
-				cmdBuf.m_buf,
-				VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-				VK_PIPELINE_STAGE_TRANSFER_BIT,
-				0,
-				0, nullptr,
-				0, nullptr,
-				1, &barrier
-			);
-
-			VkBufferImageCopy region = {};
-			region.imageSubresource.aspectMask = m_aspect;
-			region.imageSubresource.layerCount = 1;
-			region.imageExtent = {
-				(uint32_t)m_width,
-				(uint32_t)m_height,
-				1
-			};
-
-			vkCmdCopyBufferToImage(
-				cmdBuf.m_buf,
-				staging_buf.buf(),
-				m_image,
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-				1,
-				&region
-			);
-
 			ctx->SubmitCommandBuffer(cmdBuf);
-			ctx->Wait(streamId);
 		}
 
-		void Texture2D::download(void* hdata, int streamId) const
+		void Texture2D::download(void* hdata) const
 		{
 			if (m_width == 0 || m_height == 0) return;
 			DownloadBuffer staging_buf(m_width*m_height*pixel_size());
 
-			const Context* ctx = Context::get_context();
-			CommandBuffer cmdBuf = ctx->NewCommandBuffer(streamId);
+			auto cmdBuf = new AutoCommandBuffer;
 
 			VkImageMemoryBarrier barrier = {};
 			barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -658,7 +708,7 @@ namespace VkInline
 			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 			barrier.image = m_image;
-			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			barrier.subresourceRange.aspectMask = m_aspect;
 			barrier.subresourceRange.baseMipLevel = 0;
 			barrier.subresourceRange.levelCount = 1;
 			barrier.subresourceRange.baseArrayLayer = 0;
@@ -667,7 +717,7 @@ namespace VkInline
 			barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 
 			vkCmdPipelineBarrier(
-				cmdBuf.m_buf,
+				cmdBuf->buf(),
 				VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
 				VK_PIPELINE_STAGE_TRANSFER_BIT,
 				0,
@@ -686,7 +736,7 @@ namespace VkInline
 			};
 
 			vkCmdCopyImageToBuffer(
-				cmdBuf.m_buf,
+				cmdBuf->buf(),
 				m_image,
 				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 				staging_buf.buf(),
@@ -694,20 +744,19 @@ namespace VkInline
 				&region
 			);
 
+			const Context* ctx = Context::get_context();
 			ctx->SubmitCommandBuffer(cmdBuf);
-			ctx->Wait(streamId);
-
+			ctx->Wait();
 			staging_buf.download(hdata);
 		}
 
-
-		ComputePipeline::ComputePipeline(const std::vector<unsigned>& spv, size_t ubo_size)
+		ComputePipeline::ComputePipeline(const std::vector<unsigned>& spv)
 		{
 			const Context* ctx = Context::get_context();
 			{
 				VkShaderModuleCreateInfo createInfo = {};
 				createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-				createInfo.codeSize = spv.size()*sizeof(unsigned);
+				createInfo.codeSize = spv.size() * sizeof(unsigned);
 				createInfo.pCode = reinterpret_cast<const uint32_t*>(spv.data());
 				vkCreateShaderModule(ctx->device(), &createInfo, nullptr, &m_shaderModule);
 			}
@@ -747,9 +796,68 @@ namespace VkInline
 
 				vkCreateComputePipelines(ctx->device(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_pipeline);
 			}
+			m_recyclers = new std::unordered_map<std::thread::id, CommandBufferRecycler*>;
+			m_mu_streams = new std::shared_mutex;
+		}
 
-			m_ubo = new UploadBuffer(ubo_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+		ComputePipeline::~ComputePipeline()
+		{
+			auto iter = m_recyclers->begin();
+			while (iter != m_recyclers->end())
+			{
+				delete iter->second;
+				iter++;
+			}
+			delete m_mu_streams;
+			delete m_recyclers;
+			const Context* ctx = Context::get_context();			
+			vkDestroyPipeline(ctx->device(), m_pipeline, nullptr);
+			vkDestroyPipelineLayout(ctx->device(), m_pipelineLayout, nullptr);
+			vkDestroyDescriptorSetLayout(ctx->device(), m_descriptorSetLayout, nullptr);
+			vkDestroyShaderModule(ctx->device(), m_shaderModule, nullptr);		
+		}
 
+		CommandBufferRecycler* ComputePipeline::recycler() const
+		{
+			std::thread::id threadId = std::this_thread::get_id();
+			{
+				std::shared_lock<std::shared_mutex> locker(*m_mu_streams);
+				auto iter = m_recyclers->find(threadId);
+				if (iter != m_recyclers->end())
+				{
+					CommandBufferRecycler* ret = iter->second;
+					return ret;
+				}
+			}
+
+			CommandBufferRecycler* ret = new CommandBufferRecycler;
+
+			{
+				std::unique_lock<std::shared_mutex> locker(*m_mu_streams);
+				(*m_recyclers)[threadId] = ret;
+			}
+
+			return ret;
+
+		}
+
+		void ComputePipeline::bind(const CommandBuffer& cmdbuf) const
+		{
+			vkCmdBindPipeline(cmdbuf.buf(), VK_PIPELINE_BIND_POINT_COMPUTE, m_pipeline);
+		}
+
+		void ComputePipeline::dispatch(const CommandBuffer& cmdbuf, unsigned dim_x, unsigned dim_y, unsigned dim_z) const
+		{
+			vkCmdDispatch(cmdbuf.buf(), dim_x, dim_y, dim_z);
+		}
+
+
+		ComputeCommandBuffer::ComputeCommandBuffer(const ComputePipeline* pipeline, size_t ubo_size)
+		{
+			const Context* ctx = Context::get_context();
+
+			m_pipeline = pipeline;
+			m_ubo = new DeviceBuffer(ubo_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 			{
 				VkDescriptorPoolSize poolSizes[1];
 				poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -768,7 +876,7 @@ namespace VkInline
 				allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 				allocInfo.descriptorPool = m_descriptorPool;
 				allocInfo.descriptorSetCount = 1;
-				allocInfo.pSetLayouts = &m_descriptorSetLayout;
+				allocInfo.pSetLayouts = &pipeline->layout_desc();
 				vkAllocateDescriptorSets(ctx->device(), &allocInfo, &m_descriptorSet);
 			}
 
@@ -788,21 +896,21 @@ namespace VkInline
 			}
 		}
 
-		ComputePipeline::~ComputePipeline()
+		ComputeCommandBuffer::~ComputeCommandBuffer()
 		{
 			const Context* ctx = Context::get_context();
 			vkDestroyDescriptorPool(ctx->device(), m_descriptorPool, nullptr);
-			vkDestroyPipeline(ctx->device(), m_pipeline, nullptr);
-			vkDestroyPipelineLayout(ctx->device(), m_pipelineLayout, nullptr);
-			vkDestroyDescriptorSetLayout(ctx->device(), m_descriptorSetLayout, nullptr);
-			vkDestroyShaderModule(ctx->device(), m_shaderModule, nullptr);
 			delete m_ubo;
 		}
 
-		void ComputePipeline::launch(const CommandBuffer& cmdbuf, void* param_data, unsigned dim_x, unsigned dim_y, unsigned dim_z) const
+		void ComputeCommandBuffer::Recycle()
+		{
+			m_pipeline->recycler()->RecycleCommandBuffer(this);
+		}
+
+		void ComputeCommandBuffer::dispatch(void* param_data, unsigned dim_x, unsigned dim_y, unsigned dim_z)
 		{
 			m_ubo->upload(param_data);
-
 			VkBufferMemoryBarrier barriers[1];
 			barriers[0] = {};
 			barriers[0].sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
@@ -815,7 +923,7 @@ namespace VkInline
 			barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 
 			vkCmdPipelineBarrier(
-				cmdbuf.m_buf,
+				m_buf,
 				VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
 				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 				0,
@@ -823,10 +931,9 @@ namespace VkInline
 				1, barriers,
 				0, nullptr
 			);
-
-			vkCmdBindPipeline(cmdbuf.m_buf, VK_PIPELINE_BIND_POINT_COMPUTE, m_pipeline);
-			vkCmdBindDescriptorSets(cmdbuf.m_buf, VK_PIPELINE_BIND_POINT_COMPUTE, m_pipelineLayout, 0, 1, &m_descriptorSet, 0, 0);
-			vkCmdDispatch(cmdbuf.m_buf, dim_x, dim_y, dim_z);
+			m_pipeline->bind(*this);
+			vkCmdBindDescriptorSets(m_buf, VK_PIPELINE_BIND_POINT_COMPUTE, m_pipeline->layout_pipeline(), 0, 1, &m_descriptorSet, 0, 0);
+			m_pipeline->dispatch(*this, dim_x, dim_y, dim_z);
 		}
 	}
 }

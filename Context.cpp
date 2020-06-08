@@ -2,6 +2,7 @@
 #include "internal_context.h"
 #include <unordered_map>
 #include <unordered_set>
+#include <shared_mutex>
 
 namespace VkInline
 {
@@ -14,7 +15,8 @@ namespace VkInline
 		// reflection 
 		size_t size_of(const char* cls);
 		bool query_struct(const char* name_struct, size_t* member_offsets);
-		bool launch_compute(dim_type gridDim, dim_type blockDim, const std::vector<CapturedShaderViewable>& arg_map, const char* code_body, int streamId);
+		bool launch_compute(dim_type gridDim, dim_type blockDim, const std::vector<CapturedShaderViewable>& arg_map, const char* code_body);
+
 
 		void add_built_in_header(const char* name, const char* content);
 		void add_code_block(const char* code);
@@ -26,7 +28,7 @@ namespace VkInline
 		Context();
 		~Context();
 
-		unsigned _build_compute_pipeline(dim_type blockDim, const std::vector<CapturedShaderViewable>& arg_map, const char* code_body, size_t ubo_size);
+		unsigned _build_compute_pipeline(dim_type blockDim, const std::vector<CapturedShaderViewable>& arg_map, const char* code_body);
 
 		bool m_verbose;
 		std::unordered_map<std::string, const char*> m_header_map;
@@ -35,15 +37,19 @@ namespace VkInline
 		std::string m_header_of_dynamic_code;
 		std::string m_name_header_of_dynamic_code;
 		std::unordered_set<int64_t> m_known_code;
+		std::shared_mutex m_mutex_dynamic_code;
 
 		std::unordered_map<std::string, size_t> m_size_of_types;
+		std::shared_mutex m_mutex_sizes;
+
 		std::unordered_map<std::string, std::vector<size_t>> m_offsets_of_structs;
+		std::shared_mutex m_mutex_offsets;
 
 		std::vector <Internal::ComputePipeline*> m_cache_compute_pipelines;
 		std::unordered_map<int64_t, unsigned> m_map_compute_pipelines;
+		std::shared_mutex m_mutex_compute_pipelines;
 
 	};
-
 }
 
 #include "impl_context.inl"
@@ -91,10 +97,10 @@ namespace VkInline
 		return Context::get_context().add_dynamic_code(code);
 	}
 
-	void Wait(int streamId)
+	void Wait()
 	{
 		auto context = Internal::Context::get_context();
-		context->Wait(streamId);
+		context->Wait();
 	}
 
 	int Texture2D::width() const
@@ -143,16 +149,15 @@ namespace VkInline
 		delete m_tex;
 	}
 
-	void Texture2D::upload(const void* hdata, int streamId)
+	void Texture2D::upload(const void* hdata)
 	{
-		m_tex->upload(hdata, streamId);
+		m_tex->upload(hdata);
 	}
 
-	void Texture2D::download(void* hdata, int streamId) const
+	void Texture2D::download(void* hdata) const
 	{
-		m_tex->download(hdata, streamId);
+		m_tex->download(hdata);
 	}
-
 
 	Computer::Computer(const std::vector<const char*>& param_names, const char* code_body) :
 		m_param_names(param_names.size()), m_code_body(code_body)
@@ -161,7 +166,7 @@ namespace VkInline
 			m_param_names[i] = param_names[i];
 	}
 
-	bool Computer::launch(dim_type gridDim, dim_type blockDim, const ShaderViewable** args, int streamId)
+	bool Computer::launch(dim_type gridDim, dim_type blockDim, const ShaderViewable** args)
 	{
 		Context& ctx = Context::get_context();
 		std::vector<CapturedShaderViewable> arg_map(m_param_names.size());
@@ -170,9 +175,10 @@ namespace VkInline
 			arg_map[i].obj_name = m_param_names[i].c_str();
 			arg_map[i].obj = args[i];
 		}
-		return ctx.launch_compute(gridDim, blockDim, arg_map, m_code_body.c_str(), streamId);
+		return ctx.launch_compute(gridDim, blockDim, arg_map, m_code_body.c_str());
 	}
 
 
-}
 
+
+}

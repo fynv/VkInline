@@ -5,18 +5,15 @@
 #include <stdlib.h>
 #include <unordered_map>
 #include <mutex>
+#include <shared_mutex>
 #include <queue>
+#include <thread>
 
 namespace VkInline
 {
 	namespace Internal
 	{
-		struct CommandBuffer
-		{
-			int m_streamId;
-			VkCommandBuffer m_buf;
-			VkFence m_fence;
-		};
+		class CommandBuffer;
 
 		class Context
 		{
@@ -26,9 +23,17 @@ namespace VkInline
 			const VkPhysicalDevice& physicalDevice() const { return m_physicalDevice; }
 			const VkDevice& device() const { return m_device; }
 
-			CommandBuffer NewCommandBuffer(int streamId = 0) const;
-			void SubmitCommandBuffer(const CommandBuffer& cmdBuf, size_t n = 1) const;
-			void Wait(int streamId = 0) const;
+			struct Stream
+			{
+				VkCommandPool m_commandPool;
+				std::queue<CommandBuffer*> m_queue_wait;
+				std::mutex m_mutex_pool;
+			};
+			Stream* stream() const;
+
+			void SubmitCommandBuffer(CommandBuffer* cmdBuf, size_t n = 1) const;
+			void WaitUtil(CommandBuffer* lastCmdBuf) const;
+			void Wait() const;
 
 		private:
 			VkDebugUtilsMessengerEXT m_debugMessenger;
@@ -45,21 +50,58 @@ namespace VkInline
 			VkQueue m_queue;
 			std::mutex* m_mu_queue;
 
-			struct Stream
-			{
-				VkCommandPool m_commandPool;
-				std::queue<CommandBuffer> m_queue_wait;
-				std::queue<CommandBuffer> m_queue_recycle;
-			};
+			std::unordered_map<std::thread::id, Stream*>* m_streams;
+			std::shared_mutex* m_mu_streams;
 
-			std::unordered_map<int, Stream>* m_streams;
-			std::mutex* m_mu_streams;
+			Stream* _stream(std::thread::id threadId) const;
 
-			Stream& _stream(int i) const;
 
 			bool _init_vulkan();
 			Context();
 			~Context();
+
+		};
+
+		class CommandBuffer
+		{
+		public:
+			const VkCommandBuffer& buf() const { return m_buf; }
+			const VkFence& fence() const { return m_fence; }
+
+			CommandBuffer();
+			virtual ~CommandBuffer();
+
+			virtual void Recycle();
+
+		protected:
+			Context::Stream* m_stream;
+			VkCommandBuffer m_buf;
+			VkFence m_fence;
+
+		};
+
+		class AutoCommandBuffer : public CommandBuffer
+		{
+		public:
+			AutoCommandBuffer() {}
+			virtual ~AutoCommandBuffer() {}
+			virtual void Recycle()
+			{
+				delete this;
+			}
+		};
+
+		class CommandBufferRecycler
+		{
+		public:
+			CommandBufferRecycler();
+			~CommandBufferRecycler();
+			void RecycleCommandBuffer(CommandBuffer* cmdbuf);
+			CommandBuffer* RetriveCommandBuffer();
+
+
+		private:
+			std::queue<CommandBuffer*> m_queue_recycle;
 		};
 
 		class Buffer
@@ -84,18 +126,17 @@ namespace VkInline
 		class UploadBuffer : public Buffer
 		{
 		public:
-			UploadBuffer(VkDeviceSize size, VkBufferUsageFlags usage=0);
+			UploadBuffer(VkDeviceSize size, VkBufferUsageFlags usage = 0);
 			virtual ~UploadBuffer();
 
 			void upload(const void* hdata);
 			void zero();
-
 		};
 
 		class DownloadBuffer : public Buffer
 		{
 		public:
-			DownloadBuffer(VkDeviceSize size, VkBufferUsageFlags usage=0);
+			DownloadBuffer(VkDeviceSize size, VkBufferUsageFlags usage = 0);
 			virtual ~DownloadBuffer();
 
 			void download(void* hdata);
@@ -107,9 +148,9 @@ namespace VkInline
 			DeviceBuffer(VkDeviceSize size, VkBufferUsageFlags usage);
 			virtual ~DeviceBuffer();
 
-			void upload(const void* hdata, int streamId = 0);
-			void zero(int streamId = 0);
-			void download(void* hdata, VkDeviceSize begin = 0, VkDeviceSize end = (VkDeviceSize)(-1), int streamId = 0) const;
+			void upload(const void* hdata);
+			void zero();
+			void download(void* hdata, VkDeviceSize begin = 0, VkDeviceSize end = (VkDeviceSize)(-1)) const;
 
 		};
 
@@ -129,8 +170,8 @@ namespace VkInline
 			Texture2D(int width, int height, VkFormat format, VkImageAspectFlags aspectFlags, VkImageUsageFlags usage);
 			~Texture2D();
 
-			void upload(const void* hdata, int streamId = 0);
-			void download(void* hdata, int streamId = 0) const;
+			void upload(const void* hdata);
+			void download(void* hdata) const;
 
 
 		private:
@@ -141,27 +182,51 @@ namespace VkInline
 			VkImage m_image;
 			VkDeviceMemory m_mem;
 			VkImageView m_view;
-
 		};
 
 		class ComputePipeline
 		{
 		public:
-			ComputePipeline(const std::vector<unsigned>& spv, size_t ubo_size);
+			ComputePipeline(const std::vector<unsigned>& spv);
 			~ComputePipeline();
 
-			void launch(const CommandBuffer& cmdbuf, void* param_data, unsigned dim_x, unsigned dim_y, unsigned dim_z) const;
+			const VkShaderModule& shader() const { return m_shaderModule; }
+			const VkDescriptorSetLayout& layout_desc() const { return m_descriptorSetLayout; }
+			const VkPipelineLayout& layout_pipeline() const { return m_pipelineLayout; }
+			const VkPipeline& pipeline() const { return m_pipeline; }
+			CommandBufferRecycler* recycler() const;
+
+			void bind(const CommandBuffer& cmdbuf) const;
+			void dispatch(const CommandBuffer& cmdbuf, unsigned dim_x, unsigned dim_y, unsigned dim_z) const;
 
 		private:
 			VkShaderModule m_shaderModule;
 			VkDescriptorSetLayout m_descriptorSetLayout;
 			VkPipelineLayout m_pipelineLayout;
 			VkPipeline m_pipeline;
-			UploadBuffer* m_ubo;
+
+			std::unordered_map<std::thread::id, CommandBufferRecycler*>* m_recyclers;
+			std::shared_mutex* m_mu_streams;
+
+		};
+
+		class ComputeCommandBuffer : public CommandBuffer
+		{
+		public:
+			ComputeCommandBuffer(const ComputePipeline* pipeline, size_t ubo_size);
+			~ComputeCommandBuffer();
+
+			virtual void Recycle();
+			void dispatch(void* param_data, unsigned dim_x, unsigned dim_y, unsigned dim_z);
+
+		private:
+			const ComputePipeline* m_pipeline;
+			DeviceBuffer* m_ubo;
 			VkDescriptorPool m_descriptorPool;
 			VkDescriptorSet m_descriptorSet;
 
 		};
+
 
 	}
 

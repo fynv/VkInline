@@ -32,9 +32,9 @@ void n_add_code_block(const char* line)
 	AddCodeBlock(line);
 }
 
-void n_wait(int streamId)
+void n_wait()
 {
-	Wait(streamId);
+	Wait();
 }
 
 void* n_computer_create(void* ptr_param_list, const char* body)
@@ -61,7 +61,7 @@ int n_computer_num_params(void* cptr)
 }
 
 
-int n_computer_launch(void* ptr_kernel, void* ptr_gridDim, void* ptr_blockDim, void* ptr_arg_list, int streamId)
+int n_computer_launch(void* ptr_kernel, void* ptr_gridDim, void* ptr_blockDim, void* ptr_arg_list)
 {
 	Computer* kernel = (Computer*)ptr_kernel;
 	size_t num_params = kernel->num_params();
@@ -78,7 +78,7 @@ int n_computer_launch(void* ptr_kernel, void* ptr_gridDim, void* ptr_blockDim, v
 		return -1;
 	}
 
-	if (kernel->launch(*gridDim, *blockDim, arg_list->data(), streamId))
+	if (kernel->launch(*gridDim, *blockDim, arg_list->data()))
 		return 0;
 	else
 		return -1;

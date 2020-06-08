@@ -5,9 +5,9 @@ from .SVBuffer import *
 from .SVCombine import SVCombine_Create
 
 class SVVector(ShaderViewable):
-    def __init__(self, elem_type, size, ptr_host_data=None, streamId=0):
+    def __init__(self, elem_type, size, ptr_host_data=None):
         self.m_size = SVUInt32(size)
-        self.m_buf = SVBuffer(elem_type, size, ptr_host_data, streamId)
+        self.m_buf = SVBuffer(elem_type, size, ptr_host_data)
         self.m_cptr = SVCombine_Create({'size':  self.m_size, 'data': self.m_buf},
 '''
 uint get_size(in Comb_#hash# vec)
@@ -35,7 +35,7 @@ void set_value(in Comb_#hash# vec, in uint id, in {0} value)
     def size(self):
         return self.m_buf.size()
 
-    def to_host(self, begin = 0, end = -1, streamId=0):
+    def to_host(self, begin = 0, end = -1):
         elem_type = self.name_elem_type()
         shape = [1, 1, 1]
         if elem_type=='int':
@@ -172,10 +172,10 @@ void set_value(in Comb_#hash# vec, in uint id, in {0} value)
         else: # matrix
             ret = np.empty(shape, dtype=nptype)
 
-        self.m_buf.to_host(ret.__array_interface__['data'][0], begin, end, streamId)
+        self.m_buf.to_host(ret.__array_interface__['data'][0], begin, end)
         return ret
 
-def device_vector_from_numpy(nparr, streamId=0):
+def device_vector_from_numpy(nparr):
     shape = nparr.shape
     if len(shape)<2:
         shape = [shape[0], 1, 1]
@@ -275,9 +275,9 @@ def device_vector_from_numpy(nparr, streamId=0):
                 elem_type = 'dmat4x4'                
 
     ptr_host_data = nparr.__array_interface__['data'][0]
-    return SVVector(elem_type, shape[0], ptr_host_data, streamId)
+    return SVVector(elem_type, shape[0], ptr_host_data)
 
-def device_vector_from_list(lst, elem_type, streamId=0):
+def device_vector_from_list(lst, elem_type):
     if elem_type=='int':
         nptype = np.int32
     elif elem_type=='uint':
@@ -287,4 +287,4 @@ def device_vector_from_list(lst, elem_type, streamId=0):
     elif elem_type=='double':
         nptype = np.float64
     nparr = np.array(lst, dtype=nptype)
-    return device_vector_from_numpy(nparr, streamId)
+    return device_vector_from_numpy(nparr)

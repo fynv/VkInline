@@ -24,12 +24,12 @@ extern "C"
 	PY_VkInline_API void n_add_built_in_header(const char* filename, const char* filecontent);
 	PY_VkInline_API void n_add_inlcude_filename(const char* fn);
 	PY_VkInline_API void n_add_code_block(const char* line);
-	PY_VkInline_API void n_wait(int streamId);
+	PY_VkInline_API void n_wait();
 
 	PY_VkInline_API void* n_computer_create(void* ptr_param_list, const char* body);
 	PY_VkInline_API void n_computer_destroy(void* cptr);
 	PY_VkInline_API int n_computer_num_params(void* cptr);
-	PY_VkInline_API int n_computer_launch(void* ptr_kernel, void* ptr_gridDim, void* ptr_blockDim, void* ptr_arg_list, int streamId);
+	PY_VkInline_API int n_computer_launch(void* ptr_kernel, void* ptr_gridDim, void* ptr_blockDim, void* ptr_arg_list);
 
 	// ShaderViewable
 	PY_VkInline_API const char* n_sv_name_view_type(void* cptr);
@@ -110,12 +110,12 @@ extern "C"
 	PY_VkInline_API void n_svdmat4x4_value(void* cptr, double* v);
 
 	// SVBuffer
-	PY_VkInline_API void* n_svbuffer_create(const char* elem_type, unsigned long long size, void* hdata, int streamId);
+	PY_VkInline_API void* n_svbuffer_create(const char* elem_type, unsigned long long size, void* hdata);
 	PY_VkInline_API const char* n_svbuffer_name_elem_type(void* cptr);
 	PY_VkInline_API unsigned long long n_svbuffer_elem_size(void* cptr);
 	PY_VkInline_API unsigned long long n_svbuffer_size(void* cptr);
-	PY_VkInline_API void n_svbuffer_from_host(void* cptr, void* hdata, int streamId);
-	PY_VkInline_API void n_svbuffer_to_host(void* cptr, void* hdata, unsigned long long begin, unsigned long long end, int streamId);
+	PY_VkInline_API void n_svbuffer_from_host(void* cptr, void* hdata);
+	PY_VkInline_API void n_svbuffer_to_host(void* cptr, void* hdata, unsigned long long begin, unsigned long long end);
 
 	// SVCombine
 	PY_VkInline_API void* n_svcombine_create(void* ptr_svs, void* ptr_names, const char* operations);

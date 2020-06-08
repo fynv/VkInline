@@ -1,7 +1,9 @@
 #pragma once
 
 #include <vector>
+#include <unordered_map>
 #include <string>
+#include <thread>
 #include "ShaderViewable.h"
 
 namespace VkInline
@@ -9,6 +11,7 @@ namespace VkInline
 	namespace Internal
 	{
 		class Texture2D;
+		class CommandBufferRecycler;
 	}
 
 	struct dim_type
@@ -27,7 +30,7 @@ namespace VkInline
 	void AddInlcudeFilename(const char* fn);
 	std::string Add_Dynamic_Code(const char* code);
 
-	void Wait(int streamId = 0);
+	void Wait();
 
 	class Texture2D
 	{
@@ -44,8 +47,8 @@ namespace VkInline
 		Texture2D(int width, int height, unsigned vkformat, bool isDepth = false, bool isStencil = false);
 		~Texture2D();
 
-		void upload(const void* hdata, int streamId = 0);
-		void download(void* hdata, int streamId = 0) const;
+		void upload(const void* hdata);
+		void download(void* hdata) const;
 
 	private:
 		Internal::Texture2D* m_tex;
@@ -56,11 +59,13 @@ namespace VkInline
 	public:
 		size_t num_params() const { return m_param_names.size(); }
 		Computer(const std::vector<const char*>& param_names, const char* code_body);
-		bool launch(dim_type gridDim, dim_type blockDim, const ShaderViewable** args, int streamId = 0);
+		bool launch(dim_type gridDim, dim_type blockDim, const ShaderViewable** args);
 
 	private:
 		std::vector<std::string> m_param_names;
 		std::string m_code_body;
+		
 	};
+
 
 }

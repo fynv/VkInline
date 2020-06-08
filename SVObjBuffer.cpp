@@ -81,7 +81,7 @@ namespace VkInline
 		barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 
 		vkCmdPipelineBarrier(
-			cmdbuf.m_buf,
+			cmdbuf.buf(),
 			VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
 			dstFlags,
 			0,

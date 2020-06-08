@@ -9,7 +9,7 @@ namespace VkInline
 {
 	namespace Internal
 	{
-		struct CommandBuffer;
+		class CommandBuffer;
 	}
 
 	typedef std::vector<char> ViewBuf;

@@ -23,12 +23,12 @@ unsigned long long n_size_of(const char* cls);
 void n_add_built_in_header(const char* filename, const char* filecontent);
 void n_add_inlcude_filename(const char* fn);
 void n_add_code_block(const char* line);
-void n_wait(int streamId);
+void n_wait();
 
 void* n_computer_create(void* ptr_param_list, const char* body);
 void n_computer_destroy(void* cptr);
 int n_computer_num_params(void* cptr);
-int n_computer_launch(void* ptr_kernel, void* ptr_gridDim, void* ptr_blockDim, void* ptr_arg_list, int streamId);
+int n_computer_launch(void* ptr_kernel, void* ptr_gridDim, void* ptr_blockDim, void* ptr_arg_list);
 
 // ShaderViewable
 const char* n_sv_name_view_type(void* cptr);
@@ -109,12 +109,12 @@ void* n_svdmat4x4_create(const double* v);
 void n_svdmat4x4_value(void* cptr, double* v);
 
 // SVBuffer
-void* n_svbuffer_create(const char* elem_type, unsigned long long size, void* hdata, int streamId);
+void* n_svbuffer_create(const char* elem_type, unsigned long long size, void* hdata);
 const char* n_svbuffer_name_elem_type(void* cptr);
 unsigned long long n_svbuffer_elem_size(void* cptr);
 unsigned long long n_svbuffer_size(void* cptr);
-void n_svbuffer_from_host(void* cptr, void* hdata, int streamId);
-void n_svbuffer_to_host(void* cptr, void* hdata, unsigned long long begin, unsigned long long end, int streamId);
+void n_svbuffer_from_host(void* cptr, void* hdata);
+void n_svbuffer_to_host(void* cptr, void* hdata, unsigned long long begin, unsigned long long end);
 
 // SVCombine
 void* n_svcombine_create(void* ptr_svs, void* ptr_names, const char* operations);

@@ -2,7 +2,7 @@
 #include "SVBuffer.h"
 namespace VkInline
 {
-	SVBuffer::SVBuffer(const char* elem_type, size_t size, void* hdata, int streamId)
+	SVBuffer::SVBuffer(const char* elem_type, size_t size, void* hdata)
 	{
 		m_elem_type = elem_type;
 		m_elem_size = SizeOf(elem_type);
@@ -22,9 +22,9 @@ namespace VkInline
 		m_name_view_type = std::string("Buf_") + Add_Dynamic_Code(code.c_str());
 		m_data = new Internal::DeviceBuffer(m_elem_size*m_size, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
 		if (hdata != nullptr)
-			m_data->upload(hdata, streamId);
+			m_data->upload(hdata);
 		else
-			m_data->zero(streamId);
+			m_data->zero();
 	}
 
 	SVBuffer::~SVBuffer()
@@ -32,18 +32,18 @@ namespace VkInline
 		delete m_data;
 	}
 
-	void SVBuffer::from_host(void* hdata, int streamId)
+	void SVBuffer::from_host(void* hdata)
 	{
 		if (m_size > 0)
-			m_data->upload(hdata, streamId);
+			m_data->upload(hdata);
 	}
 
-	void SVBuffer::to_host(void* hdata, size_t begin, size_t end, int streamId) const
+	void SVBuffer::to_host(void* hdata, size_t begin, size_t end) const
 	{
 		if (end == (size_t)(-1) || end > m_size) end = m_size;
 		size_t n = end - begin;
 		if (n > 0)
-			m_data->download(hdata, begin*m_elem_size, end*m_elem_size, streamId);
+			m_data->download(hdata, begin*m_elem_size, end*m_elem_size);
 	}
 
 	ViewBuf SVBuffer::view() const
@@ -68,7 +68,7 @@ namespace VkInline
 		barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 
 		vkCmdPipelineBarrier(
-			cmdbuf.m_buf,
+			cmdbuf.buf(),
 			VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
 			dstFlags,
 			0,
