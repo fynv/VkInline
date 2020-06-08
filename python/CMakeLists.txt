@@ -30,7 +30,7 @@ set (DEFINES  ${DEFINES}
 -D"_CRT_SECURE_NO_WARNINGS"
 )
 else()
-add_definitions(-std=c++14)
+add_definitions(-std=c++17)
 add_compile_options(-fPIC)
 endif()
 
