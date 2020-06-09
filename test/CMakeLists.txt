@@ -1,8 +1,8 @@
 cmake_minimum_required (VERSION 3.0)
 
-add_executable(test test.cpp)
+add_executable(test_vki test.cpp)
 
-target_link_libraries(test VkInline)
+target_link_libraries(test_vki VkInline)
 
-install(TARGETS test RUNTIME DESTINATION test_cpp)
+install(TARGETS test_vki RUNTIME DESTINATION test_cpp)
 
