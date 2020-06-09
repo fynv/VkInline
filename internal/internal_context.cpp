@@ -7,7 +7,7 @@ namespace VkInline
 {
 	namespace Internal
 	{
-		const Context* Context::get_context(bool cleanup)
+		const Context* Context::get_context(bool cleanup, bool is_trying)
 		{
 			static Context* s_ctx = nullptr;
 			if (!cleanup)
@@ -18,6 +18,18 @@ namespace VkInline
 			{
 				delete s_ctx;
 				s_ctx = nullptr;
+			}
+			if (s_ctx && !s_ctx->m_is_valid)
+			{
+				if (is_trying)
+				{
+					delete s_ctx;
+					s_ctx = nullptr;
+				}
+				else
+				{
+					exit(0);
+				}
 			}
 			return s_ctx;
 		}
@@ -30,7 +42,11 @@ namespace VkInline
 
 		bool Context::_init_vulkan()
 		{
-			if (volkInitialize() != VK_SUCCESS) return false;
+			if (volkInitialize() != VK_SUCCESS)
+			{
+				printf("volk initialization failed.\n");
+				return false;
+			}
 
 			{
 				VkApplicationInfo appInfo = {};
@@ -68,7 +84,11 @@ namespace VkInline
 				createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
 #endif
 
-				if (vkCreateInstance(&createInfo, nullptr, &m_instance) != VK_SUCCESS) return false;
+				if (vkCreateInstance(&createInfo, nullptr, &m_instance) != VK_SUCCESS)
+				{
+					printf("Failed to create vulkan instance\n");
+					return false;
+				}
 
 #ifdef _DEBUG
 				PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(m_instance, "vkCreateDebugUtilsMessengerEXT");
@@ -138,7 +158,11 @@ namespace VkInline
 				createInfo.ppEnabledExtensionNames = name_extensions;
 				createInfo.pNext = &m_features2;
 
-				if (vkCreateDevice(m_physicalDevice, &createInfo, nullptr, &m_device) != VK_SUCCESS) return false;
+				if (vkCreateDevice(m_physicalDevice, &createInfo, nullptr, &m_device) != VK_SUCCESS)
+				{
+					printf("Failed to create vulkan device\n");
+					return false;
+				}
 			}
 
 			vkGetDeviceQueue(m_device, m_queueFamily, 0, &m_queue);
@@ -149,7 +173,8 @@ namespace VkInline
 
 		Context::Context()
 		{
-			if (!_init_vulkan()) exit(0);
+			m_is_valid = _init_vulkan();
+			if (!m_is_valid) return;
 			m_mu_queue = new std::mutex;
 			m_streams = new std::unordered_map<std::thread::id, Stream*>;
 			m_mu_streams = new std::shared_mutex;
@@ -157,6 +182,8 @@ namespace VkInline
 
 		Context::~Context()
 		{
+			if (!m_is_valid) return;
+
 			auto iter = m_streams->begin();
 			while (iter != m_streams->end())
 			{

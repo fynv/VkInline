@@ -19,6 +19,7 @@ extern "C"
 	PY_VkInline_API void n_dim3_destroy(void* cptr);
 
 	// Context
+	PY_VkInline_API int n_vkinline_try_init();
 	PY_VkInline_API void n_set_verbose(unsigned verbose);
 	PY_VkInline_API unsigned long long n_size_of(const char* cls);
 	PY_VkInline_API void n_add_built_in_header(const char* filename, const char* filecontent);

@@ -18,7 +18,8 @@ namespace VkInline
 	{
 		unsigned int x, y, z;
 	};
-
+	
+	bool TryInit();
 	void SetVerbose(bool verbose = true);
 
 	// reflection 

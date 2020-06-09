@@ -56,6 +56,12 @@ namespace VkInline
 
 namespace VkInline
 {
+	bool TryInit()
+	{
+		auto context = Internal::Context::get_context(false, true);
+		return context != nullptr;
+	}
+
 	void SetVerbose(bool verbose)
 	{
 		Context& ctx = Context::get_context();

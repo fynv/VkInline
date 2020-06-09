@@ -18,6 +18,7 @@ void* n_dim3_create(unsigned x, unsigned y, unsigned z);
 void n_dim3_destroy(void* cptr);
 
 // Context
+int n_vkinline_try_init();
 void n_set_verbose(unsigned verbose);
 unsigned long long n_size_of(const char* cls);
 void n_add_built_in_header(const char* filename, const char* filecontent);

@@ -7,6 +7,11 @@ using namespace VkInline;
 typedef std::vector<std::string> StrArray;
 typedef std::vector<const ShaderViewable*> PtrArray;
 
+int n_vkinline_try_init()
+{
+	return TryInit() ? 1 : 0;
+}
+
 void n_set_verbose(unsigned verbose)
 {
 	SetVerbose(verbose != 0);

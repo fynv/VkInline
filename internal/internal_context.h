@@ -18,7 +18,7 @@ namespace VkInline
 		class Context
 		{
 		public:
-			static const Context* get_context(bool cleanup = false);
+			static const Context* get_context(bool cleanup = false, bool is_trying = false);
 			const VkInstance& instance() const { return m_instance; }
 			const VkPhysicalDevice& physicalDevice() const { return m_physicalDevice; }
 			const VkDevice& device() const { return m_device; }
@@ -55,7 +55,7 @@ namespace VkInline
 
 			Stream* _stream(std::thread::id threadId) const;
 
-
+			bool m_is_valid;
 			bool _init_vulkan();
 			Context();
 			~Context();
