@@ -2,6 +2,7 @@
 #include "internal_context.h"
 #include <unordered_map>
 #include <unordered_set>
+#include <mutex>
 #include <shared_mutex>
 
 namespace VkInline
@@ -40,10 +41,10 @@ namespace VkInline
 		std::shared_mutex m_mutex_dynamic_code;
 
 		std::unordered_map<std::string, size_t> m_size_of_types;
-		std::shared_mutex m_mutex_sizes;
+		std::mutex m_mutex_sizes;
 
 		std::unordered_map<std::string, std::vector<size_t>> m_offsets_of_structs;
-		std::shared_mutex m_mutex_offsets;
+		std::mutex m_mutex_offsets;
 
 		std::vector <Internal::ComputePipeline*> m_cache_compute_pipelines;
 		std::unordered_map<int64_t, unsigned> m_map_compute_pipelines;
