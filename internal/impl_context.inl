@@ -24,6 +24,9 @@ namespace VkInline
 
 	Context::~Context()
 	{
+		auto context = Internal::Context::get_context();
+		context->Wait();
+
 		for (size_t i = 0; i < m_cache_compute_pipelines.size(); i++)
 			delete m_cache_compute_pipelines[i];
 		Internal::Context::get_context(true);
