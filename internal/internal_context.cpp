@@ -52,10 +52,10 @@ namespace VkInline
 				VkApplicationInfo appInfo = {};
 				appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 				appInfo.pApplicationName = "TextureGen";
-				appInfo.applicationVersion = VK_MAKE_VERSION(1, 2, 0);
+				appInfo.applicationVersion = VK_MAKE_VERSION(1, 1, 0);
 				appInfo.pEngineName = "No Engine";
-				appInfo.engineVersion = VK_MAKE_VERSION(1, 2, 0);
-				appInfo.apiVersion = VK_API_VERSION_1_2;
+				appInfo.engineVersion = VK_MAKE_VERSION(1, 1, 0);
+				appInfo.apiVersion = VK_API_VERSION_1_1;
 
 				const char* name_extensions[] = {
 					VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
@@ -111,7 +111,7 @@ namespace VkInline
 			m_descriptorIndexingFeatures = {};
 			m_scalarBlockLayoutFeatures = {};
 			{
-				m_bufferDeviceAddressFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
+				m_bufferDeviceAddressFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_EXT;
 				m_bufferDeviceAddressFeatures.pNext = &m_descriptorIndexingFeatures;
 				m_descriptorIndexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
 				m_descriptorIndexingFeatures.pNext = &m_scalarBlockLayoutFeatures;
@@ -144,8 +144,7 @@ namespace VkInline
 				queueCreateInfo.pQueuePriorities = &m_queuePriority;
 
 				const char* name_extensions[] = {
-					VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME,
-					VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+					VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
 					VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
 					VK_EXT_SCALAR_BLOCK_LAYOUT_EXTENSION_NAME
 				};
@@ -357,7 +356,7 @@ namespace VkInline
 			VkBufferDeviceAddressInfo bufAdrInfo = {};
 			bufAdrInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
 			bufAdrInfo.buffer = m_buf;
-			return vkGetBufferDeviceAddressKHR(ctx->device(), &bufAdrInfo);
+			return vkGetBufferDeviceAddressEXT(ctx->device(), &bufAdrInfo);
 		}
 
 
@@ -397,14 +396,6 @@ namespace VkInline
 			memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 			memoryAllocateInfo.allocationSize = memRequirements.size;
 			memoryAllocateInfo.memoryTypeIndex = memoryTypeIndex;
-
-			VkMemoryAllocateFlagsInfo memoryAllocateFlagsInfo = {};
-			memoryAllocateFlagsInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO;
-
-			if ((usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) != 0)
-				memoryAllocateFlagsInfo.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
-
-			memoryAllocateInfo.pNext = &memoryAllocateFlagsInfo;
 
 			vkAllocateMemory(ctx->device(), &memoryAllocateInfo, nullptr, &m_mem);
 			vkBindBufferMemory(ctx->device(), m_buf, m_mem, 0);

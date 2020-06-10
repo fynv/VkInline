@@ -78,11 +78,7 @@ $ pip3 install VkInline
 
 ## Runtime Dependencies
 
-VkInline makes extensive use and abuse of the latest Vulkan features, like:
-* VK_KHR_buffer_device_address: to allow nested, dynamic data structures in a single uniform block.
-* VK_EXT_SCALAR_BLOCK_LAYOUT_EXTENSION_NAME: to make it easier to pack data elements automatically
-
-So, be sure to have a driver that supports Vulkan 1.2. Nvidia users should use one of the "beta" drivers from [https://developer.nvidia.com/vulkan-driver](https://developer.nvidia.com/vulkan-driver).
+A Vulkan-capable GPU and a recent driver is needed at run-time.
 
 You may also need Vulkan SDK at runtime for some platforms.
 
