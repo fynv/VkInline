@@ -31,15 +31,17 @@ class Computer:
     def num_params(self):
         return native.n_computer_num_params(self.m_cptr)
 
-    def launch(self, gridDim, blockDim, args):
+    def launch(self, gridDim, blockDim, args, tex2ds=[]):
         d_gridDim = Dim3(gridDim)
         d_blockDim = Dim3(blockDim)
         arg_list = ObjArray(args)
+        tex2d_list = Texture2DArray(tex2ds)
         native.n_computer_launch(
             self.m_cptr, 
             d_gridDim.m_cptr, 
             d_blockDim.m_cptr, 
-            arg_list.m_cptr)
+            arg_list.m_cptr,
+            tex2d_list.m_cptr)
 
 class For:
     def __init__(self, param_names, name_inner, body, block_size=128):
@@ -62,7 +64,7 @@ void main()
     def num_params(self):
         return native.n_computer_num_params(self.m_cptr) - 2
 
-    def launch(self, begin, end, args): 
+    def launch(self, begin, end, args, tex2ds=[]): 
         svbegin = SVUInt32(begin)
         svend = SVUInt32(end)
         args = args + [svbegin, svend]
@@ -70,13 +72,15 @@ void main()
         d_gridDim = Dim3(numBlocks)
         d_blockDim = Dim3(self.block_size)
         arg_list = ObjArray(args)
+        tex2d_list = Texture2DArray(tex2ds)
         native.n_computer_launch(
             self.m_cptr, 
             d_gridDim.m_cptr, 
             d_blockDim.m_cptr, 
-            arg_list.m_cptr)
+            arg_list.m_cptr,
+            tex2d_list.m_cptr)
 
-    def launch_n(self, n, args):
+    def launch_n(self, n, args, tex2ds=[]):
         svbegin = SVUInt32(0)
         svend = SVUInt32(n)
         args = args + [svbegin, svend]
@@ -84,9 +88,11 @@ void main()
         d_gridDim = Dim3(numBlocks)
         d_blockDim = Dim3(self.block_size)
         arg_list = ObjArray(args)
+        tex2d_list = Texture2DArray(tex2ds)
         native.n_computer_launch(
             self.m_cptr, 
             d_gridDim.m_cptr, 
             d_blockDim.m_cptr, 
-            arg_list.m_cptr)      
+            arg_list.m_cptr,
+            tex2d_list.m_cptr)      
 

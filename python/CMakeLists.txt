@@ -15,6 +15,7 @@ api_ShaderViewable.cpp
 api_SVBuffer.cpp
 api_SVCombine.cpp
 api_SVObjBuffer.cpp
+api_Texture2D.cpp
 )
 
 set (INCLUDE_DIR 
@@ -61,6 +62,7 @@ set(PYTHON
 	VkInline/SVObjBuffer.py
 	VkInline/SVVector.py
 	VkInline/SVObjVector.py
+	VkInline/Texture2D.py
 )
 
 install(FILES ${PYTHON} DESTINATION test_python/VkInline)

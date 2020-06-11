@@ -17,6 +17,9 @@ extern "C"
 	PY_VkInline_API void n_pointer_array_destroy(void* ptr_arr);
 	PY_VkInline_API void* n_dim3_create(unsigned x, unsigned y, unsigned z);
 	PY_VkInline_API void n_dim3_destroy(void* cptr);
+	PY_VkInline_API void *n_tex2d_array_create(unsigned long long size, void** ptrs);
+	PY_VkInline_API unsigned long long n_tex2d_array_size(void* ptr_arr);
+	PY_VkInline_API void n_tex2d_array_destroy(void* ptr_arr);
 
 	// Context
 	PY_VkInline_API int n_vkinline_try_init();
@@ -30,7 +33,7 @@ extern "C"
 	PY_VkInline_API void* n_computer_create(void* ptr_param_list, const char* body);
 	PY_VkInline_API void n_computer_destroy(void* cptr);
 	PY_VkInline_API int n_computer_num_params(void* cptr);
-	PY_VkInline_API int n_computer_launch(void* ptr_kernel, void* ptr_gridDim, void* ptr_blockDim, void* ptr_arg_list);
+	PY_VkInline_API int n_computer_launch(void* ptr_kernel, void* ptr_gridDim, void* ptr_blockDim, void* ptr_arg_list, void* ptr_tex2d_list);
 
 	// ShaderViewable
 	PY_VkInline_API const char* n_sv_name_view_type(void* cptr);
@@ -127,6 +130,17 @@ extern "C"
 	PY_VkInline_API unsigned long long n_svobjbuffer_elem_size(void* cptr);
 	PY_VkInline_API unsigned long long n_svobjbuffer_size(void* cptr);
 	PY_VkInline_API void n_svobjbuffer_update(void* cptr);
+
+	// Texture2D
+	PY_VkInline_API void* n_texture2d_create(int width, int height, unsigned vkformat, unsigned isDepth, unsigned isStencil);
+	PY_VkInline_API void n_texture2d_release(void* tex2d);
+	PY_VkInline_API int n_texture2d_width(void* _tex2d);
+	PY_VkInline_API int n_texture2d_height(void* _tex2d);
+	PY_VkInline_API unsigned n_texture2d_pixelsize(void* _tex2d);
+	PY_VkInline_API unsigned n_texture2d_channelcount(void* _tex2d);
+	PY_VkInline_API unsigned n_texture2d_vkformat(void* _tex2d);
+	PY_VkInline_API void n_texture2d_upload(void* _tex2d, void* hdata);
+	PY_VkInline_API void n_texture2d_download(void* _tex2d, void* hdata);
 
 
 }

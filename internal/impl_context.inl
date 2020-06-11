@@ -327,13 +327,38 @@ namespace VkInline
 		return str_hash;
 	}
 
-	unsigned Context::_build_compute_pipeline(dim_type blockDim, const std::vector<CapturedShaderViewable>& arg_map, const char* code_body)
+/*	class Signature
+	{
+	public:
+		Signature() {}
+		~Signature() {}
+
+		void push_feature(void* feature, size_t size)
+		{
+			size_t offset = m_data.size();
+			m_data.resize(offset + size);
+			memcpy(m_data.data() + offset, feature, size);
+		}
+
+		unsigned long long get_hash()
+		{
+			return (unsigned long long)crc64(0, m_data.data(), m_data.size());
+		}
+
+	private:
+		std::vector<unsigned char> m_data;
+
+	};
+*/
+
+	unsigned Context::_build_compute_pipeline(dim_type blockDim, const std::vector<CapturedShaderViewable>& arg_map, size_t num_tex2d, const char* code_body)
 	{
 		std::string saxpy =
 			"#version 460\n"
 			"#extension GL_GOOGLE_include_directive : enable\n"
 			"#extension GL_EXT_shader_explicit_arithmetic_types_int64 : enable\n"
 			"#extension GL_EXT_buffer_reference2 : enable\n"
+			"#extension GL_EXT_nonuniform_qualifier : enable\n"
 			"#extension GL_EXT_scalar_block_layout : enable\n";
 
 		for (size_t i = 0; i < m_code_blocks.size(); i++)
@@ -351,6 +376,12 @@ namespace VkInline
 			saxpy += line;
 		}
 		saxpy += "};\n";
+
+		if (num_tex2d > 0)
+		{
+			sprintf(line, "layout(binding = 1) uniform sampler2D[%d] arr_tex2d;\n", (int)num_tex2d);
+			saxpy += line;
+		}
 
 		sprintf(line, "layout(local_size_x = %d, local_size_y = %d, local_size_z = %d) in;\n", blockDim.x, blockDim.y, blockDim.z);
 		saxpy += line;
@@ -423,7 +454,7 @@ namespace VkInline
 			}
 		}
 
-		Internal::ComputePipeline* pipeline = new Internal::ComputePipeline(spv);
+		Internal::ComputePipeline* pipeline = new Internal::ComputePipeline(spv, num_tex2d);
 		m_cache_compute_pipelines.push_back(pipeline);
 		kid = (unsigned)m_cache_compute_pipelines.size() - 1;
 		m_map_compute_pipelines[hash] = kid;
@@ -431,7 +462,7 @@ namespace VkInline
 		return kid;
 	}
 
-	bool Context::launch_compute(dim_type gridDim, dim_type blockDim, const std::vector<CapturedShaderViewable>& arg_map, const char* code_body)
+	bool Context::launch_compute(dim_type gridDim, dim_type blockDim, const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const char* code_body)
 	{
 		// query uniform
 		std::vector<size_t> offsets(arg_map.size() + 1);
@@ -451,7 +482,7 @@ namespace VkInline
 			query_struct(name.c_str(), offsets.data());
 		}
 
-		unsigned kid = _build_compute_pipeline(blockDim, arg_map, code_body);
+		unsigned kid = _build_compute_pipeline(blockDim, arg_map, tex2ds.size(), code_body);
 		if (kid == (unsigned)(-1)) return false;
 		Internal::ComputePipeline* pipeline;
 		{
@@ -478,8 +509,12 @@ namespace VkInline
 			arg_map[i].obj->apply_barriers(*cmdBuf, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 		}
 
-
-		cmdBuf->dispatch(h_uniform.data(), gridDim.x, gridDim.y, gridDim.z);
+		std::vector<Internal::Texture2D*> i_tex2ds(tex2ds.size());
+		for (size_t i = 0; i < i_tex2ds.size(); i++)
+		{
+			i_tex2ds[i] = tex2ds[i]->internal();
+		}
+		cmdBuf->dispatch(h_uniform.data(), i_tex2ds.data(), gridDim.x, gridDim.y, gridDim.z);
 
 		const Internal::Context* ctx = Internal::Context::get_context();
 		ctx->SubmitCommandBuffer(cmdBuf);

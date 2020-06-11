@@ -769,8 +769,35 @@ namespace VkInline
 			staging_buf.download(hdata);
 		}
 
-		ComputePipeline::ComputePipeline(const std::vector<unsigned>& spv)
+
+		Sampler::Sampler()
 		{
+			const Context* ctx = Context::get_context();
+			VkSamplerCreateInfo samplerInfo = {};
+			samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+			samplerInfo.magFilter = VK_FILTER_LINEAR;
+			samplerInfo.minFilter = VK_FILTER_LINEAR;
+			samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+			samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+			samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+			samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+			samplerInfo.unnormalizedCoordinates = VK_FALSE;
+			samplerInfo.compareEnable = VK_FALSE;
+			samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+			samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+
+			vkCreateSampler(ctx->device(), &samplerInfo, nullptr, &m_sampler);
+		}
+
+		Sampler::~Sampler()
+		{
+			const Context* ctx = Context::get_context();
+			vkDestroySampler(ctx->device(), m_sampler, nullptr);
+		}
+
+		ComputePipeline::ComputePipeline(const std::vector<unsigned>& spv, size_t num_tex2d)
+		{
+			m_sampler = nullptr;
 			const Context* ctx = Context::get_context();
 			VkShaderModule shader_module;
 			{
@@ -781,17 +808,29 @@ namespace VkInline
 				vkCreateShaderModule(ctx->device(), &createInfo, nullptr, &shader_module);
 			}
 			{
-				VkDescriptorSetLayoutBinding descriptorSetLayoutBindings[1];
+				std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings(1);
 				descriptorSetLayoutBindings[0] = {};
 				descriptorSetLayoutBindings[0].binding = 0;
 				descriptorSetLayoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 				descriptorSetLayoutBindings[0].descriptorCount = 1;
 				descriptorSetLayoutBindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 
+				m_num_tex2d = num_tex2d;
+				if (num_tex2d > 0)
+				{
+					VkDescriptorSetLayoutBinding binding_tex2d = {};
+					binding_tex2d.binding = 1;
+					binding_tex2d.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+					binding_tex2d.descriptorCount = (unsigned)num_tex2d;
+					binding_tex2d.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+					descriptorSetLayoutBindings.push_back(binding_tex2d);
+					m_sampler = new Sampler;
+				}
+
 				VkDescriptorSetLayoutCreateInfo layoutInfo = {};
 				layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-				layoutInfo.bindingCount = 1;
-				layoutInfo.pBindings = descriptorSetLayoutBindings;
+				layoutInfo.bindingCount = (unsigned)descriptorSetLayoutBindings.size();
+				layoutInfo.pBindings = descriptorSetLayoutBindings.data();
 
 				vkCreateDescriptorSetLayout(ctx->device(), &layoutInfo, nullptr, &m_descriptorSetLayout);
 			}
@@ -835,7 +874,8 @@ namespace VkInline
 			const Context* ctx = Context::get_context();			
 			vkDestroyPipeline(ctx->device(), m_pipeline, nullptr);
 			vkDestroyPipelineLayout(ctx->device(), m_pipelineLayout, nullptr);
-			vkDestroyDescriptorSetLayout(ctx->device(), m_descriptorSetLayout, nullptr);		
+			vkDestroyDescriptorSetLayout(ctx->device(), m_descriptorSetLayout, nullptr);
+			delete m_sampler;
 		}
 
 		CommandBufferRecycler* ComputePipeline::recycler() const
@@ -880,14 +920,21 @@ namespace VkInline
 			m_pipeline = pipeline;
 			m_ubo = new DeviceBuffer(ubo_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 			{
-				VkDescriptorPoolSize poolSizes[1];
+				std::vector<VkDescriptorPoolSize> poolSizes(1);
 				poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 				poolSizes[0].descriptorCount = 1;
 
+				if (pipeline->num_tex2d() > 0)
+				{
+					VkDescriptorPoolSize pool_size_tex2d = {};
+					pool_size_tex2d.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+					pool_size_tex2d.descriptorCount = (unsigned)pipeline->num_tex2d();
+				}
+
 				VkDescriptorPoolCreateInfo poolInfo = {};
 				poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-				poolInfo.poolSizeCount = 1;
-				poolInfo.pPoolSizes = poolSizes;
+				poolInfo.poolSizeCount = (unsigned)poolSizes.size();
+				poolInfo.pPoolSizes = poolSizes.data();
 				poolInfo.maxSets = 1;
 				vkCreateDescriptorPool(ctx->device(), &poolInfo, nullptr, &m_descriptorPool);
 			}
@@ -929,9 +976,32 @@ namespace VkInline
 			m_pipeline->recycler()->RecycleCommandBuffer(this);
 		}
 
-		void ComputeCommandBuffer::dispatch(void* param_data, unsigned dim_x, unsigned dim_y, unsigned dim_z)
+		void ComputeCommandBuffer::dispatch(void* param_data, Texture2D** tex2ds, unsigned dim_x, unsigned dim_y, unsigned dim_z)
 		{
+			const Context* ctx = Context::get_context();
 			m_ubo->upload(param_data);
+
+			if (m_pipeline->num_tex2d() > 0)
+			{
+				std::vector<VkDescriptorImageInfo> imageInfos(m_pipeline->num_tex2d());
+				for (size_t i = 0; i < m_pipeline->num_tex2d(); ++i)
+				{
+					imageInfos[i] = {};
+					imageInfos[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+					imageInfos[i].imageView = tex2ds[i]->view();
+					imageInfos[i].sampler = m_pipeline->sampler()->sampler();
+				}
+
+				VkWriteDescriptorSet wds = {};
+				wds.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				wds.dstSet = m_descriptorSet;
+				wds.dstBinding = 1;
+				wds.descriptorCount = (uint32_t)m_pipeline->num_tex2d();
+				wds.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				wds.pImageInfo = imageInfos.data();
+				vkUpdateDescriptorSets(ctx->device(), 1, &wds, 0, nullptr);
+			}
+
 			VkBufferMemoryBarrier barriers[1];
 			barriers[0] = {};
 			barriers[0].sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;

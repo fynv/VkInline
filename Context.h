@@ -60,7 +60,7 @@ namespace VkInline
 	public:
 		size_t num_params() const { return m_param_names.size(); }
 		Computer(const std::vector<const char*>& param_names, const char* code_body);
-		bool launch(dim_type gridDim, dim_type blockDim, const ShaderViewable** args);
+		bool launch(dim_type gridDim, dim_type blockDim, const ShaderViewable** args, const std::vector<Texture2D*>& tex2ds);
 
 	private:
 		std::vector<std::string> m_param_names;

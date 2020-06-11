@@ -69,7 +69,7 @@ int main()
 	SVVector svbuf_out("float", 5);
 	SVFloat k1(10.0);
 	const ShaderViewable* args_f[] = { &svbuf_in, &svbuf_out, &k1 };
-	ker.launch({ 1,1,1 }, { 128, 1, 1 }, args_f);
+	ker.launch({ 1,1,1 }, { 128, 1, 1 }, args_f, {});
 	svbuf_out.to_host(test_f);
 	printf("%f %f %f %f %f\n", test_f[0], test_f[1], test_f[2], test_f[3], test_f[4]);
 

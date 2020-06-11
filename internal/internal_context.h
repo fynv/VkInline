@@ -184,15 +184,30 @@ namespace VkInline
 			VkImageView m_view;
 		};
 
+		class Sampler
+		{
+		public:
+			Sampler();
+			~Sampler();
+
+			const VkSampler& sampler() const { return m_sampler; }
+
+		private:
+			VkSampler m_sampler;
+		};
+
+
 		class ComputePipeline
 		{
 		public:
-			ComputePipeline(const std::vector<unsigned>& spv);
+			ComputePipeline(const std::vector<unsigned>& spv, size_t num_tex2d);
 			~ComputePipeline();
 
 			const VkDescriptorSetLayout& layout_desc() const { return m_descriptorSetLayout; }
 			const VkPipelineLayout& layout_pipeline() const { return m_pipelineLayout; }
 			const VkPipeline& pipeline() const { return m_pipeline; }
+			size_t num_tex2d() const { return m_num_tex2d; }
+			Sampler* sampler() const { return m_sampler; }
 			CommandBufferRecycler* recycler() const;
 
 			void bind(const CommandBuffer& cmdbuf) const;
@@ -202,6 +217,9 @@ namespace VkInline
 			VkDescriptorSetLayout m_descriptorSetLayout;
 			VkPipelineLayout m_pipelineLayout;
 			VkPipeline m_pipeline;
+
+			size_t m_num_tex2d;
+			Sampler* m_sampler;
 
 			std::unordered_map<std::thread::id, CommandBufferRecycler*>* m_recyclers;
 			std::shared_mutex* m_mu_streams;
@@ -215,7 +233,7 @@ namespace VkInline
 			~ComputeCommandBuffer();
 
 			virtual void Recycle();
-			void dispatch(void* param_data, unsigned dim_x, unsigned dim_y, unsigned dim_z);
+			void dispatch(void* param_data, Texture2D** tex2ds, unsigned dim_x, unsigned dim_y, unsigned dim_z);
 
 		private:
 			const ComputePipeline* m_pipeline;

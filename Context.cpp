@@ -16,7 +16,7 @@ namespace VkInline
 		// reflection 
 		size_t size_of(const char* cls);
 		bool query_struct(const char* name_struct, size_t* member_offsets);
-		bool launch_compute(dim_type gridDim, dim_type blockDim, const std::vector<CapturedShaderViewable>& arg_map, const char* code_body);
+		bool launch_compute(dim_type gridDim, dim_type blockDim, const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds,  const char* code_body);
 
 
 		void add_built_in_header(const char* name, const char* content);
@@ -29,7 +29,7 @@ namespace VkInline
 		Context();
 		~Context();
 
-		unsigned _build_compute_pipeline(dim_type blockDim, const std::vector<CapturedShaderViewable>& arg_map, const char* code_body);
+		unsigned _build_compute_pipeline(dim_type blockDim, const std::vector<CapturedShaderViewable>& arg_map, size_t num_tex2d, const char* code_body);
 
 		bool m_verbose;
 		std::unordered_map<std::string, const char*> m_header_map;
@@ -60,7 +60,9 @@ namespace VkInline
 	bool TryInit()
 	{
 		auto context = Internal::Context::get_context(false, true);
-		return context != nullptr;
+		if (context == nullptr) return false;
+		Context& ctx = Context::get_context();
+		return true;
 	}
 
 	void SetVerbose(bool verbose)
@@ -173,7 +175,7 @@ namespace VkInline
 			m_param_names[i] = param_names[i];
 	}
 
-	bool Computer::launch(dim_type gridDim, dim_type blockDim, const ShaderViewable** args)
+	bool Computer::launch(dim_type gridDim, dim_type blockDim, const ShaderViewable** args, const std::vector<Texture2D*>& tex2ds)
 	{
 		Context& ctx = Context::get_context();
 		std::vector<CapturedShaderViewable> arg_map(m_param_names.size());
@@ -182,7 +184,7 @@ namespace VkInline
 			arg_map[i].obj_name = m_param_names[i].c_str();
 			arg_map[i].obj = args[i];
 		}
-		return ctx.launch_compute(gridDim, blockDim, arg_map, m_code_body.c_str());
+		return ctx.launch_compute(gridDim, blockDim, arg_map, tex2ds, m_code_body.c_str());
 	}
 
 

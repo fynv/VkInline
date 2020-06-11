@@ -7,6 +7,7 @@ using namespace VkInline;
 
 typedef std::vector<std::string> StrArray;
 typedef std::vector<const ShaderViewable*> PtrArray;
+typedef std::vector<Texture2D*> Tex2DArray;
 
 void* n_string_array_create(unsigned long long size, const char* const* strs)
 {
@@ -60,4 +61,22 @@ void n_dim3_destroy(void* cptr)
 	delete v;
 }
 
+void *n_tex2d_array_create(unsigned long long size, void** ptrs)
+{
+	Tex2DArray* ret = new Tex2DArray(size);
+	memcpy(ret->data(), ptrs, sizeof(void*)*size);
+	return ret;
+}
+
+unsigned long long n_tex2d_array_size(void* ptr_arr)
+{
+	Tex2DArray* arr = (Tex2DArray*)ptr_arr;
+	return arr->size();
+}
+
+void n_tex2d_array_destroy(void* ptr_arr)
+{
+	Tex2DArray* arr = (Tex2DArray*)ptr_arr;
+	delete arr;
+}
 

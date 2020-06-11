@@ -6,6 +6,7 @@ using namespace VkInline;
 
 typedef std::vector<std::string> StrArray;
 typedef std::vector<const ShaderViewable*> PtrArray;
+typedef std::vector<Texture2D*> Tex2DArray;
 
 int n_vkinline_try_init()
 {
@@ -66,7 +67,7 @@ int n_computer_num_params(void* cptr)
 }
 
 
-int n_computer_launch(void* ptr_kernel, void* ptr_gridDim, void* ptr_blockDim, void* ptr_arg_list)
+int n_computer_launch(void* ptr_kernel, void* ptr_gridDim, void* ptr_blockDim, void* ptr_arg_list, void* ptr_tex2d_list)
 {
 	Computer* kernel = (Computer*)ptr_kernel;
 	size_t num_params = kernel->num_params();
@@ -75,6 +76,7 @@ int n_computer_launch(void* ptr_kernel, void* ptr_gridDim, void* ptr_blockDim, v
 	dim_type* blockDim = (dim_type*)ptr_blockDim;
 
 	PtrArray* arg_list = (PtrArray*)ptr_arg_list;
+	Tex2DArray* tex2d_list = (Tex2DArray*)ptr_tex2d_list;
 
 	size_t size = arg_list->size();
 	if (num_params != size)
@@ -83,7 +85,7 @@ int n_computer_launch(void* ptr_kernel, void* ptr_gridDim, void* ptr_blockDim, v
 		return -1;
 	}
 
-	if (kernel->launch(*gridDim, *blockDim, arg_list->data()))
+	if (kernel->launch(*gridDim, *blockDim, arg_list->data(), *tex2d_list))
 		return 0;
 	else
 		return -1;
