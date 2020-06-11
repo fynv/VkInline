@@ -923,12 +923,6 @@ namespace VkInline
 			vkCmdBindPipeline(cmdbuf.buf(), VK_PIPELINE_BIND_POINT_COMPUTE, m_pipeline);
 		}
 
-		void ComputePipeline::dispatch(const CommandBuffer& cmdbuf, unsigned dim_x, unsigned dim_y, unsigned dim_z) const
-		{
-			vkCmdDispatch(cmdbuf.buf(), dim_x, dim_y, dim_z);
-		}
-
-
 		ComputeCommandBuffer::ComputeCommandBuffer(const ComputePipeline* pipeline, size_t ubo_size)
 		{
 			const Context* ctx = Context::get_context();
@@ -1046,7 +1040,7 @@ namespace VkInline
 			);
 			m_pipeline->bind(*this);
 			vkCmdBindDescriptorSets(m_buf, VK_PIPELINE_BIND_POINT_COMPUTE, m_pipeline->layout_pipeline(), 0, 1, &m_descriptorSet, 0, 0);
-			m_pipeline->dispatch(*this, dim_x, dim_y, dim_z);
+			vkCmdDispatch(m_buf, dim_x, dim_y, dim_z);
 		}
 	}
 }

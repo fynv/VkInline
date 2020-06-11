@@ -211,7 +211,6 @@ namespace VkInline
 			CommandBufferRecycler* recycler() const;
 
 			void bind(const CommandBuffer& cmdbuf) const;
-			void dispatch(const CommandBuffer& cmdbuf, unsigned dim_x, unsigned dim_y, unsigned dim_z) const;
 
 		private:
 			VkDescriptorSetLayout m_descriptorSetLayout;
