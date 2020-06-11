@@ -168,6 +168,37 @@ namespace VkInline
 		m_tex->download(hdata);
 	}
 
+	void Texture2D::apply_barrier_as_texture(const Internal::CommandBuffer& cmdbuf, unsigned dstFlags) const
+	{
+		VkImageMemoryBarrier barriers[1];
+		barriers[0] = {};
+		barriers[0].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		barriers[0].oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		barriers[0].newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barriers[0].image = m_tex->image();
+		barriers[0].subresourceRange.aspectMask = m_tex->aspect();
+		barriers[0].subresourceRange.baseMipLevel = 0;
+		barriers[0].subresourceRange.levelCount = 1;
+		barriers[0].subresourceRange.baseArrayLayer = 0;
+		barriers[0].subresourceRange.layerCount = 1;
+		barriers[0].srcAccessMask = 0;
+		barriers[0].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+	
+
+		vkCmdPipelineBarrier(
+			cmdbuf.buf(),
+			VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+			dstFlags,
+			0,
+			0, nullptr,
+			0, nullptr,
+			1, barriers
+		);
+
+	}
+
 	Computer::Computer(const std::vector<const char*>& param_names, const char* code_body) :
 		m_param_names(param_names.size()), m_code_body(code_body)
 	{

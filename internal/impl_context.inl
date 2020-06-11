@@ -512,6 +512,7 @@ namespace VkInline
 		std::vector<Internal::Texture2D*> i_tex2ds(tex2ds.size());
 		for (size_t i = 0; i < i_tex2ds.size(); i++)
 		{
+			tex2ds[i]->apply_barrier_as_texture(*cmdBuf, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 			i_tex2ds[i] = tex2ds[i]->internal();
 		}
 		cmdBuf->dispatch(h_uniform.data(), i_tex2ds.data(), gridDim.x, gridDim.y, gridDim.z);

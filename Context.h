@@ -51,6 +51,8 @@ namespace VkInline
 		void upload(const void* hdata);
 		void download(void* hdata) const;
 
+		void apply_barrier_as_texture(const Internal::CommandBuffer& cmdbuf, unsigned dstFlags) const;
+
 	private:
 		Internal::Texture2D* m_tex;
 	};
