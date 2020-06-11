@@ -210,8 +210,6 @@ namespace VkInline
 			Sampler* sampler() const { return m_sampler; }
 			CommandBufferRecycler* recycler() const;
 
-			void bind(const CommandBuffer& cmdbuf) const;
-
 		private:
 			VkDescriptorSetLayout m_descriptorSetLayout;
 			VkPipelineLayout m_pipelineLayout;
