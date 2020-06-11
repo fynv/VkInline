@@ -144,7 +144,7 @@ namespace VkInline
 		if (isStencil) aspect |= VK_IMAGE_ASPECT_STENCIL_BIT;
 		if (aspect == 0) aspect |= VK_IMAGE_ASPECT_COLOR_BIT;
 
-		VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+		VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT;
 		if (isDepth || isStencil)
 			usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 		else

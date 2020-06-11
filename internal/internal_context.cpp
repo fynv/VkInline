@@ -591,9 +591,7 @@ namespace VkInline
 			vkGetPhysicalDeviceFormatProperties(ctx->physicalDevice(), format, &format_props);		
 			if ((format_props.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) == 0
 				|| (format_props.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT) == 0)
-				usage &= ~VK_IMAGE_USAGE_SAMPLED_BIT;
-			if ((format_props.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) == 0)
-				usage &= ~VK_IMAGE_USAGE_STORAGE_BIT;
+				usage &= ~VK_IMAGE_USAGE_SAMPLED_BIT;			
 			if ((format_props.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) == 0)
 				usage &= ~VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 			if ((format_props.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) == 0)
