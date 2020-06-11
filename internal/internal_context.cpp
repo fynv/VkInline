@@ -947,6 +947,7 @@ namespace VkInline
 					VkDescriptorPoolSize pool_size_tex2d = {};
 					pool_size_tex2d.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 					pool_size_tex2d.descriptorCount = (unsigned)pipeline->num_tex2d();
+					poolSizes.push_back(pool_size_tex2d);
 				}
 
 				VkDescriptorPoolCreateInfo poolInfo = {};
@@ -999,26 +1000,31 @@ namespace VkInline
 			const Context* ctx = Context::get_context();
 			m_ubo->upload(param_data);
 
-			if (m_pipeline->num_tex2d() > 0)
+			std::vector<VkDescriptorImageInfo> tex2dInfos(m_pipeline->num_tex2d());
+			for (size_t i = 0; i < m_pipeline->num_tex2d(); ++i)
 			{
-				std::vector<VkDescriptorImageInfo> imageInfos(m_pipeline->num_tex2d());
-				for (size_t i = 0; i < m_pipeline->num_tex2d(); ++i)
-				{
-					imageInfos[i] = {};
-					imageInfos[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-					imageInfos[i].imageView = tex2ds[i]->view();
-					imageInfos[i].sampler = m_pipeline->sampler()->sampler();
-				}
+				tex2dInfos[i] = {};
+				tex2dInfos[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+				tex2dInfos[i].imageView = tex2ds[i]->view();
+				tex2dInfos[i].sampler = m_pipeline->sampler()->sampler();
+			}
 
+			
+
+			std::vector<VkWriteDescriptorSet> list_wds;
+			if (m_pipeline->num_tex2d() > 0)
+			{	
 				VkWriteDescriptorSet wds = {};
 				wds.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 				wds.dstSet = m_descriptorSet;
 				wds.dstBinding = 1;
 				wds.descriptorCount = (uint32_t)m_pipeline->num_tex2d();
 				wds.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-				wds.pImageInfo = imageInfos.data();
-				vkUpdateDescriptorSets(ctx->device(), 1, &wds, 0, nullptr);
+				wds.pImageInfo = tex2dInfos.data();
+				list_wds.push_back(wds);
+
 			}
+			vkUpdateDescriptorSets(ctx->device(), (unsigned)list_wds.size(), list_wds.data(), 0, nullptr);
 
 			VkBufferMemoryBarrier barriers[1];
 			barriers[0] = {};

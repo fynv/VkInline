@@ -379,7 +379,7 @@ namespace VkInline
 
 		if (num_tex2d > 0)
 		{
-			sprintf(line, "layout(binding = 1) uniform sampler2D[%d] arr_tex2d;\n", (int)num_tex2d);
+			sprintf(line, "layout(binding = 1) uniform sampler2D arr_tex2d[%d];\n", (int)num_tex2d);
 			saxpy += line;
 		}
 
