@@ -832,13 +832,13 @@ namespace VkInline
 
 		for (size_t i = 0; i < arg_map.size(); i++)
 		{
-			arg_map[i].obj->apply_barriers(*cmdBuf, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+			arg_map[i].obj->apply_barriers(*cmdBuf, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
 		}
 
 		std::vector<Internal::Texture2D*> i_tex2ds(tex2ds.size());
 		for (size_t i = 0; i < i_tex2ds.size(); i++)
 		{
-			tex2ds[i]->apply_barrier_as_texture(*cmdBuf, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+			tex2ds[i]->apply_barrier_as_texture(*cmdBuf, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
 			i_tex2ds[i] = tex2ds[i]->internal();
 		}
 
