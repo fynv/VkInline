@@ -98,26 +98,26 @@ void main()
             tex2d_list.m_cptr)      
 
 class DrawCall:
-    def __init__(self, code_body_vert, code_body_frag):
+    def __init__(self, code_body_vert, code_body_frag, options={}):
         self.m_cptr = native.n_drawcall_create(code_body_vert.encode('utf-8'), code_body_frag.encode('utf-8'))
+
+        if 'depth_enable' in options:
+            native.n_drawcall_set_depth_enable(self.m_cptr, options['depth_enable'])
+
+        if 'depth_write' in options:
+            native.n_drawcall_set_depth_write(self.m_cptr, options['depth_write'])
+
+        if 'color_write' in options:
+            native.n_drawcall_set_color_write(self.m_cptr, options['color_write'])
+
+        if 'alpha_write' in options:
+            native.n_drawcall_set_alpha_write(self.m_cptr, options['alpha_write'])
+
+        if 'alpha_blend' in options:
+            native.n_drawcall_set_alpha_blend(self.m_cptr, options['alpha_blend'])            
 
     def __del__(self):
         native.n_drawcall_destroy(self.m_cptr)
-
-    def set_depth_enable(self, enable):
-        native.n_drawcall_set_depth_enable(self.m_cptr, enable)
-
-    def set_depth_write(self, enable):
-        native.n_drawcall_set_depth_write(self.m_cptr, enable)
-
-    def set_color_write(self, enable):
-        native.n_drawcall_set_color_write(self.m_cptr, enable)
-
-    def set_alpha_write(self, enable):
-        native.n_drawcall_set_alpha_write(self.m_cptr, enable)
-
-    def set_alpha_blend(self, enable):
-        native.n_drawcall_set_alpha_blend(self.m_cptr, enable)
 
 
 class Rasterizer:
