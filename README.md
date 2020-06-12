@@ -12,7 +12,11 @@ However, I still found it attractive to do, because:
 * Vulkan is neutral to GPU vendors
 * Vulkan exposes more GPU features. Computing is only a small part, there are rasterization and ray-tracing pipelines.
 
-Currently VkInline has implemented similar features as CUDAInline. You can easily launch a compute shader from Python, like:
+## Progress
+
+### Computation
+
+The computation part of VkInline has similar features as CUDAInline. You can easily launch a compute shader from Python, like:
 
 ```python
 
@@ -38,7 +42,89 @@ print (darr_out.to_host())
 
 ```
 
-I will work on to expose the rasterization and ray-tracing functionality in a similar fashion.
+GLSL lacks language features like "struct member functions" and "operator overloading". 
+Therefore, array indexing doesn't look as nice as in CUDAInline.
+
+Native 2,3,4 component vector types and matrix types are supported. For example
+```python
+v = vki.device_vector_from_list([[1, -1], [2, -3], [5, 1000]], 'double')
+print (v.name_elem_type(), v.elem_size())
+print(v.to_host())
+```
+
+You will get:
+```
+dvec2 16
+[[   1.   -1.]
+ [   2.   -3.]
+ [   5. 1000.]]
+```
+
+### Rasterization
+
+Rasterization is currently very much simplified in VkInline. The limiations are:
+
+* 1 vki.Rasterizer = 1 Vulkan render-pass with 1 subpass. Multi-subpass feature of Vulkan is mostly for tiled-caching applications, which will not be implemented in VkInline.
+* Currently only vertex-shader and fragment-shader programming are supported.
+* User now has very limited control over the pipeline options, which can be set during the construction of a DrawCall object. 
+  The options that are not covered are set to most commonly used values internally. For example, depth compare-op is set to VK_COMPARE_OP_LESS, sample counts are VK_SAMPLE_COUNT_1_BIT.
+  These will be covered gradually in the future.
+
+Example:
+
+```python
+import VkInline as vki
+import numpy as np
+from PIL import Image
+
+VK_FORMAT_R8G8B8A8_SRGB = 43
+
+width = 640
+height =  480
+
+colorBuf = vki.Texture2D(width, height, VK_FORMAT_R8G8B8A8_SRGB)
+
+positions = np.array([ [0.0, -0.5, 0.5], [0.5, 0.5, 0.5], [-0.5, 0.5, 0.5] ], dtype = np.float32)
+gpuPos = vki.device_vector_from_numpy(positions)
+
+colors =  np.array([ [0.0, 1.0, 0.0], [1.0, 0.0, 0.0], [0.0, 0.0, 1.0]], dtype = np.float32)
+gpuColors = vki.device_vector_from_numpy(colors)
+
+rp = vki.Rasterizer(['pos', 'col'])
+
+rp.add_draw_call(vki.DrawCall(
+'''
+layout (location = 0) out vec3 vColor;
+void main() 
+{
+	gl_Position = vec4(get_value(pos, gl_VertexIndex), 1.0);
+	vColor = get_value(col, gl_VertexIndex);
+}
+''',
+'''
+layout (location = 0) in vec3 vColor;
+layout (location = 0) out vec4 outColor;
+
+void main() 
+{
+	outColor = vec4(vColor, 1.0);
+}
+'''))
+
+
+rp.launch([3], [colorBuf], None, [0.5, 0.5, 0.5, 1.0], 1.0, [gpuPos, gpuColors])
+
+image_out = np.empty((height, width, 4), dtype=np.uint8)
+colorBuf.download(image_out)
+
+Image.fromarray(image_out, 'RGBA').save('output.png')
+
+```
+The code generates the following image:
+
+<img src="doc/rasterization_result.png" width="640px">
+
+I will work on to expose more of the rasterization functionalities, and may start to expose the ray-tracing functionalities at some point.
 
 ## Installation
 
