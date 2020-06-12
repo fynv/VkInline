@@ -68,7 +68,7 @@ Rasterization is currently very much simplified in VkInline. The limiations are:
 * Currently only vertex-shader and fragment-shader programming are supported.
 * User now has very limited control over the pipeline options, which can be set during the construction of a DrawCall object. 
   The options that are not covered are set to most commonly used values internally. For example, depth compare-op is set to VK_COMPARE_OP_LESS, sample counts are VK_SAMPLE_COUNT_1_BIT.
-  These will be covered gradually in the future.
+  Primitive topology is now always VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST. These will be covered progressively in the future.
 
 Example:
 
