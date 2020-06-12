@@ -145,7 +145,7 @@ void* n_rasterizer_create(void* ptr_param_list)
 	return cptr;
 }
 
-void* n_rasterizer_destroy(void* cptr)
+void n_rasterizer_destroy(void* cptr)
 {
 	delete (Rasterizer*)cptr;
 }

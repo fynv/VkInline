@@ -42,7 +42,7 @@ void n_drawcall_set_color_write(void* cptr, unsigned enable);
 void n_drawcall_set_alpha_write(void* cptr, unsigned enable);
 void n_drawcall_set_alpha_blend(void* cptr, unsigned enable);
 void* n_rasterizer_create(void* ptr_param_list);
-void* n_rasterizer_destroy(void* cptr);
+void n_rasterizer_destroy(void* cptr);
 int n_rasterizer_num_params(void* cptr);
 void n_rasterizer_set_clear_color_buf(void* cptr, int i, unsigned clear);
 void n_rasterizer_set_clear_depth_buf(void* cptr, unsigned clear);

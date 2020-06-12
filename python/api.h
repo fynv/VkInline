@@ -43,7 +43,7 @@ extern "C"
 	PY_VkInline_API void n_drawcall_set_alpha_write(void* cptr, unsigned enable);
 	PY_VkInline_API void n_drawcall_set_alpha_blend(void* cptr, unsigned enable);
 	PY_VkInline_API void* n_rasterizer_create(void* ptr_param_list);
-	PY_VkInline_API void* n_rasterizer_destroy(void* cptr);
+	PY_VkInline_API void n_rasterizer_destroy(void* cptr);
 	PY_VkInline_API int n_rasterizer_num_params(void* cptr);
 	PY_VkInline_API void n_rasterizer_set_clear_color_buf(void* cptr, int i, unsigned clear);
 	PY_VkInline_API void n_rasterizer_set_clear_depth_buf(void* cptr, unsigned clear);
