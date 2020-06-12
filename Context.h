@@ -70,5 +70,54 @@ namespace VkInline
 		
 	};
 
+	class DrawCall
+	{
+	public:
+		DrawCall(const char* code_body_vert, const char* code_body_frag);
+
+		void set_depth_enable(bool enable) { m_depth_enable = enable; }
+		void set_depth_write(bool enable) { m_depth_write = enable; }
+		void set_color_write(bool enable) { m_color_write = enable; }
+		void set_alpha_write(bool enable) { m_alpha_write = enable; }
+		void set_alpha_blend(bool enable) { m_alpha_blend = enable;  }
+
+		const char* code_body_vert() const { return m_code_body_vert.c_str(); }
+		const char* code_body_frag() const { return m_code_body_frag.c_str(); }
+		bool depth_enable() const { return m_depth_enable; }
+		bool depth_write() const { return m_depth_write; }
+		bool color_write() const { return m_color_write; }
+		bool alpha_write() const { return m_alpha_write; }
+		bool alpha_blend() const { return m_alpha_blend; }
+
+	private:
+		std::string m_code_body_vert;
+		std::string m_code_body_frag;
+		bool m_depth_enable;
+		bool m_depth_write;
+		bool m_color_write;
+		bool m_alpha_write;
+		bool m_alpha_blend;
+	};
+
+	class Rasterizer
+	{
+	public:
+		size_t num_params() const { return m_param_names.size(); }
+		Rasterizer(const std::vector<const char*>& param_names);
+
+		void set_clear_color_buf(int i, bool clear);
+		void set_clear_depth_buf(bool clear);
+
+		void add_draw_call(const DrawCall* draw_call);
+		bool launch(const std::vector<Texture2D*>&  colorBufs, Texture2D* depthBuf, float* clear_colors, float clear_depth,
+			const ShaderViewable** args, const std::vector<Texture2D*>& tex2ds, unsigned* vertex_counts);
+
+	private:
+		std::vector<std::string> m_param_names;
+		std::vector<bool> m_clear_color_buf;
+		bool m_clear_depth_buf;
+		std::vector<const DrawCall*> m_draw_calls;
+	};
+
 
 }

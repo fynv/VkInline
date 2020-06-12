@@ -5,6 +5,7 @@ set(PYTHON_TEST
 	test_reduce.py
 	test_multithread.py
 	test_tex2d.py
+	test_rasterization.py
 )
 
 install(FILES ${PYTHON_TEST} DESTINATION test_python )

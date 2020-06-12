@@ -34,6 +34,22 @@ void n_computer_destroy(void* cptr);
 int n_computer_num_params(void* cptr);
 int n_computer_launch(void* ptr_kernel, void* ptr_gridDim, void* ptr_blockDim, void* ptr_arg_list, void* ptr_tex2d_list);
 
+void* n_drawcall_create(const char* code_body_vert, const char* code_body_frag);
+void n_drawcall_destroy(void* cptr);
+void n_drawcall_set_depth_enable(void* cptr, unsigned enable);
+void n_drawcall_set_depth_write(void* cptr, unsigned enable);
+void n_drawcall_set_color_write(void* cptr, unsigned enable);
+void n_drawcall_set_alpha_write(void* cptr, unsigned enable);
+void n_drawcall_set_alpha_blend(void* cptr, unsigned enable);
+void* n_rasterizer_create(void* ptr_param_list);
+void* n_rasterizer_destroy(void* cptr);
+int n_rasterizer_num_params(void* cptr);
+void n_rasterizer_set_clear_color_buf(void* cptr, int i, unsigned clear);
+void n_rasterizer_set_clear_depth_buf(void* cptr, unsigned clear);
+void n_rasterizer_add_draw_call(void* cptr, void* draw_call);
+int n_rasterizer_launch(void* cptr, void* ptr_colorBufs, void* _depthBuf, float* clear_colors, float clear_depth,
+	void* ptr_arg_list, void* ptr_tex2d_list, unsigned* vertex_counts);
+
 // ShaderViewable
 const char* n_sv_name_view_type(void* cptr);
 void n_sv_destroy(void* cptr);

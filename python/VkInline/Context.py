@@ -1,4 +1,5 @@
-from .Native import native
+import numpy as np
+from .Native import ffi, native
 from .ShaderViewable import *
 from .utils import *
 
@@ -95,4 +96,60 @@ void main()
             d_blockDim.m_cptr, 
             arg_list.m_cptr,
             tex2d_list.m_cptr)      
+
+class DrawCall:
+    def __init__(self, code_body_vert, code_body_frag):
+        self.m_cptr = native.n_drawcall_create(code_body_vert.encode('utf-8'), code_body_frag.encode('utf-8'))
+
+    def __del__(self):
+        native.n_drawcall_destroy(self.m_cptr)
+
+    def set_depth_enable(self, enable):
+        native.n_drawcall_set_depth_enable(self.m_cptr, enable)
+
+    def set_depth_write(self, enable):
+        native.n_drawcall_set_depth_write(self.m_cptr, enable)
+
+    def set_color_write(self, enable):
+        native.n_drawcall_set_color_write(self.m_cptr, enable)
+
+    def set_alpha_write(self, enable):
+        native.n_drawcall_set_alpha_write(self.m_cptr, enable)
+
+    def set_alpha_blend(self, enable):
+        native.n_drawcall_set_alpha_blend(self.m_cptr, enable)
+
+
+class Rasterizer:
+    def __init__(self, param_names):
+        o_param_names = StrArray(param_names)
+        self.m_cptr = native.n_rasterizer_create(o_param_names.m_cptr)
+        self.m_draw_calls = []
+
+    def __del__(self):
+        native.n_rasterizer_destroy(self.m_cptr)
+
+    def num_params(self):
+        return native.n_rasterizer_num_params(self.m_cptr)
+
+    def set_clear_color_buf(self, i, clear):
+        native.n_rasterizer_set_clear_color_buf(self.m_cptr, i, clear)
+
+    def set_clear_depth_buf(self, clear):
+        native.n_rasterizer_set_clear_depth_buf(self.m_cptr, clear)
+
+    def add_draw_call(self, draw_call):
+        self.m_draw_calls += [draw_call]
+        native.n_rasterizer_add_draw_call(self.m_cptr, draw_call.m_cptr)
+
+    def launch(self, vertex_counts, colorBufs, depthBuf, clear_colors, clear_depth, args, tex2ds=[]):
+        colorBuf_list = Texture2DArray(colorBufs)
+        p_depthBuf = ffi.NULL
+        if depthBuf!=None:
+            p_depthBuf = depthBuf.m_cptr
+        arg_list = ObjArray(args)
+        tex2d_list = Texture2DArray(tex2ds)
+        native.n_rasterizer_launch(self.m_cptr, colorBuf_list.m_cptr, p_depthBuf, clear_colors, clear_depth, arg_list.m_cptr, tex2d_list.m_cptr, vertex_counts)
+
+
 

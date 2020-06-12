@@ -240,6 +240,79 @@ namespace VkInline
 
 		};
 
+		struct AttachmentInfo
+		{
+			VkFormat format;
+			bool clear_at_load;
+		};
+
+		struct GraphicsPipelineInfo
+		{
+			const std::vector<unsigned>* spv_vert;
+			const std::vector<unsigned>* spv_frag;
+			bool depth_enable;
+			bool depth_write;
+			bool color_write;
+			bool alpha_write;
+			bool alpha_blend;
+		};
+
+		class RenderPass
+		{
+		public:
+			RenderPass(
+				const std::vector<AttachmentInfo>& color_attachmentInfo,
+				const AttachmentInfo* depth_attachmentInfo,
+				const std::vector<GraphicsPipelineInfo>& pipelineInfo,
+				size_t num_tex2d);
+
+			~RenderPass();		
+
+			const VkDescriptorSetLayout& layout_desc() const { return m_descriptorSetLayout; }
+			const VkPipelineLayout& layout_pipeline() const { return m_pipelineLayout; }
+			const VkRenderPass& render_pass() const { return m_renderPass; }
+			size_t num_pipelines() const { return m_pipelines.size(); }
+			size_t num_color_attachments() const { return m_num_color_attachments; }
+			bool has_depth_attachment() const { return m_has_depth_attachment; }
+			const VkPipeline& pipeline(int i) const { return m_pipelines[i]; }
+			size_t num_tex2d() const { return m_num_tex2d; }
+			Sampler* sampler() const { return m_sampler; }
+			CommandBufferRecycler* recycler() const;
+
+		private:
+			VkDescriptorSetLayout m_descriptorSetLayout;
+			VkPipelineLayout m_pipelineLayout;
+			VkRenderPass m_renderPass;
+			std::vector<VkPipeline> m_pipelines;
+
+			size_t m_num_color_attachments;
+			bool m_has_depth_attachment;
+			
+			size_t m_num_tex2d;
+			Sampler* m_sampler;		
+
+			std::unordered_map<std::thread::id, CommandBufferRecycler*>* m_recyclers;
+			std::shared_mutex* m_mu_streams;
+		};
+
+		class RenderPassCommandBuffer : public CommandBuffer
+		{
+		public:
+			RenderPassCommandBuffer(const RenderPass* render_pass, size_t ubo_size);
+			~RenderPassCommandBuffer();
+
+			virtual void Recycle();
+			void draw(Texture2D** colorBufs, Texture2D* depthBuf, float* clear_colors, float clear_depth,
+				void* param_data, Texture2D** tex2ds, unsigned* vertex_counts);
+			
+		private:
+			const RenderPass* m_render_pass;
+			DeviceBuffer* m_ubo;
+			VkDescriptorPool m_descriptorPool;
+			VkDescriptorSet m_descriptorSet;
+			VkFramebuffer m_framebuffer;
+		};
+		
 
 	}
 

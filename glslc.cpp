@@ -143,11 +143,9 @@ public:
 	}
 };
 
-bool GLSL2SPV_Compute(const char* InputCString, const std::unordered_map<std::string, const char*>* headers, std::vector<unsigned int>& SpirV)
+bool GLSL2SPV(const char* InputCString, const std::unordered_map<std::string, const char*>* headers, std::vector<unsigned int>& SpirV, EShLanguage ShaderType)
 {
 	glslang::InitializeProcess();
-
-	EShLanguage ShaderType = EShLangCompute;
 	glslang::TShader Shader(ShaderType);
 	Shader.setStrings(&InputCString, 1);
 
@@ -210,3 +208,17 @@ bool GLSL2SPV_Compute(const char* InputCString, const std::unordered_map<std::st
 
 }
 
+bool GLSL2SPV_Compute(const char* InputCString, const std::unordered_map<std::string, const char*>* headers, std::vector<unsigned int>& SpirV)
+{
+	return GLSL2SPV(InputCString, headers, SpirV, EShLangCompute);
+}
+
+bool GLSL2SPV_Vertex(const char* InputCString, const std::unordered_map<std::string, const char*>* headers, std::vector<unsigned int>& SpirV)
+{
+	return GLSL2SPV(InputCString, headers, SpirV, EShLangVertex);
+}
+
+bool GLSL2SPV_Fragment(const char* InputCString, const std::unordered_map<std::string, const char*>* headers, std::vector<unsigned int>& SpirV)
+{
+	return GLSL2SPV(InputCString, headers, SpirV, EShLangFragment);
+}

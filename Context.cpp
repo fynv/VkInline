@@ -7,6 +7,12 @@
 
 namespace VkInline
 {
+	struct Attachement
+	{
+		Texture2D* tex;
+		bool clear_at_load;
+	};
+
 	class Context
 	{
 	public:
@@ -17,7 +23,8 @@ namespace VkInline
 		size_t size_of(const char* cls);
 		bool query_struct(const char* name_struct, size_t* member_offsets);
 		bool launch_compute(dim_type gridDim, dim_type blockDim, const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds,  const char* code_body);
-
+		bool launch_rasterization(const std::vector<Attachement>&  colorBufs, Attachement depthBuf, float* clear_colors, float clear_depth,
+			const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const std::vector<const DrawCall*>& draw_calls, unsigned* vertex_counts);
 
 		void add_built_in_header(const char* name, const char* content);
 		void add_code_block(const char* code);
@@ -30,6 +37,9 @@ namespace VkInline
 		~Context();
 
 		unsigned _build_compute_pipeline(dim_type blockDim, const std::vector<CapturedShaderViewable>& arg_map, size_t num_tex2d, const char* code_body);
+		unsigned _build_render_pass(
+			const std::vector <Internal::AttachmentInfo>& color_attachmentInfo, const Internal::AttachmentInfo* depth_attachmentInfo,
+			const std::vector<CapturedShaderViewable>& arg_map, size_t num_tex2d, const std::vector<const DrawCall*>& draw_calls);
 
 		bool m_verbose;
 		std::unordered_map<std::string, const char*> m_header_map;
@@ -49,6 +59,10 @@ namespace VkInline
 		std::vector <Internal::ComputePipeline*> m_cache_compute_pipelines;
 		std::unordered_map<int64_t, unsigned> m_map_compute_pipelines;
 		std::shared_mutex m_mutex_compute_pipelines;
+
+		std::vector <Internal::RenderPass*> m_cache_render_passes;
+		std::unordered_map<int64_t, unsigned> m_map_render_passes;
+		std::shared_mutex m_mutex_render_passes;
 
 	};
 }
@@ -218,7 +232,67 @@ namespace VkInline
 		return ctx.launch_compute(gridDim, blockDim, arg_map, tex2ds, m_code_body.c_str());
 	}
 
+	DrawCall::DrawCall(const char* code_body_vert, const char* code_body_frag)
+	{
+		m_code_body_vert = code_body_vert;
+		m_code_body_frag = code_body_frag;
 
+		m_depth_enable = true;
+		m_depth_write = true;
+		m_color_write = true;
+		m_alpha_write = true;
+		m_alpha_blend = false;
+	}
 
+	Rasterizer::Rasterizer(const std::vector<const char*>& param_names)
+		:m_param_names(param_names.size())
+	{
+		for (size_t i = 0; i < param_names.size(); i++)
+			m_param_names[i] = param_names[i];
+
+		m_clear_depth_buf = true;
+	}
+
+	void Rasterizer::set_clear_color_buf(int i, bool clear)
+	{
+		if (i >= m_clear_color_buf.size())
+			m_clear_color_buf.resize(i + 1, true);
+		m_clear_color_buf[i] = clear;
+	}
+
+	void Rasterizer::set_clear_depth_buf(bool clear)
+	{
+		m_clear_depth_buf = clear;
+	}
+
+	void Rasterizer::add_draw_call(const DrawCall* draw_call)
+	{
+		m_draw_calls.push_back(draw_call);
+	}
+
+	bool Rasterizer::launch(const std::vector<Texture2D*>&  colorBufs, Texture2D* depthBuf, float* clear_colors, float clear_depth,
+		const ShaderViewable** args, const std::vector<Texture2D*>& tex2ds, unsigned* vertex_counts)
+	{
+		std::vector<Attachement> color_att(colorBufs.size());
+		for (size_t i = 0; i < colorBufs.size(); i++)
+		{
+			color_att[i].tex = colorBufs[i];
+			color_att[i].clear_at_load = true;
+			if (i < m_clear_color_buf.size())
+				color_att[i].clear_at_load = m_clear_color_buf[i];
+		}
+		Attachement depth_att = { depthBuf, m_clear_depth_buf };
+
+		Context& ctx = Context::get_context();
+		std::vector<CapturedShaderViewable> arg_map(m_param_names.size());
+		for (size_t i = 0; i < m_param_names.size(); i++)
+		{
+			arg_map[i].obj_name = m_param_names[i].c_str();
+			arg_map[i].obj = args[i];
+		}
+		
+		return ctx.launch_rasterization(color_att, depth_att, clear_colors, clear_depth, arg_map, tex2ds, m_draw_calls, vertex_counts);
+	
+	}
 
 }
