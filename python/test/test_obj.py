@@ -80,10 +80,10 @@ void main()
 
 proj = glm.perspective(glm.radians(45.0), width/height, 0.1, 2000.0)
 modelView = glm.lookAt(glm.vec3(-100.0, 200.0, 200.0), glm.vec3(0.0,0.0,0.0), glm.vec3(0.0, 1.0, 0.0))
-mat = vki.SVMat4x4(proj*modelView)
+mat_pos = vki.SVMat4x4(proj*modelView)
 mat_norm = vki.SVMat4x4(glm.transpose(glm.inverse(modelView)))
 
-rp.launch([len(vertex_inds)], [colorBuf], depthBuf, [0.5, 0.5, 0.5, 1.0], 1.0, [gpuPos, gpuNormals, gpuInd_pos, gpuInd_norm, mat, mat_norm])
+rp.launch([len(vertex_inds)], [colorBuf], depthBuf, [0.5, 0.5, 0.5, 1.0], 1.0, [gpuPos, gpuNormals, gpuInd_pos, gpuInd_norm, mat_pos, mat_norm])
 
 image_out = np.empty((height, width, 4), dtype=np.uint8)
 colorBuf.download(image_out)
