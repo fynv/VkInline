@@ -32,7 +32,7 @@ width = 640
 height = 480
 
 colorBuf = vki.Texture2D(width, height, VK_FORMAT_R8G8B8A8_SRGB)
-depthBuf = vki.Texture2D(width, height, VK_FORMAT_D32_SFLOAT)
+depthBuf = vki.Texture2D(width, height, VK_FORMAT_D32_SFLOAT, isDepth=True)
 gpuPos = vki.device_vector_from_numpy(positions)
 gpuNormals = vki.device_vector_from_numpy(normals)
 gpuInd_pos = vki.device_vector_from_numpy(vertex_inds) 
