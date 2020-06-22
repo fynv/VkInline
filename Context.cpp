@@ -244,6 +244,16 @@ namespace VkInline
 		m_alpha_blend = false;
 	}
 
+	size_t DrawCall::size_states() const
+	{
+		return &m_dummy - (char*)&m_depth_enable;
+	}
+
+	void DrawCall::get_states(void* p_data) const
+	{
+		memcpy(p_data, &m_depth_enable, size_states());
+	}
+
 	Rasterizer::Rasterizer(const std::vector<const char*>& param_names)
 		:m_param_names(param_names.size())
 	{

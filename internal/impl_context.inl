@@ -627,11 +627,7 @@ namespace VkInline
 			PipelineFeature pipe_feature;
 			pipe_feature.hash_vert = hash_vert[i];
 			pipe_feature.hash_frag = hash_frag[i];
-			pipe_feature.depth_enable = draw_calls[i]->depth_enable();
-			pipe_feature.depth_write = draw_calls[i]->depth_write();
-			pipe_feature.color_write = draw_calls[i]->color_write();
-			pipe_feature.alpha_write = draw_calls[i]->alpha_write();
-			pipe_feature.alpha_blend = draw_calls[i]->alpha_blend();
+			draw_calls[i]->get_states(&pipe_feature.depth_enable);
 			sig.push_feature(&pipe_feature, sizeof(PipelineFeature));
 		}
 
@@ -747,11 +743,7 @@ namespace VkInline
 			}
 			pipelineInfo[i].spv_vert = &spv_vert[i];
 			pipelineInfo[i].spv_frag = &spv_frag[i];
-			pipelineInfo[i].depth_enable = draw_calls[i]->depth_enable();
-			pipelineInfo[i].depth_write = draw_calls[i]->depth_write();
-			pipelineInfo[i].color_write = draw_calls[i]->color_write();
-			pipelineInfo[i].alpha_write = draw_calls[i]->alpha_write();
-			pipelineInfo[i].alpha_blend = draw_calls[i]->alpha_blend();
+			draw_calls[i]->get_states(&pipelineInfo[i].depth_enable);
 		}
 
 		Internal::RenderPass* renderpass = new Internal::RenderPass(color_attachmentInfo, depth_attachmentInfo, pipelineInfo, num_tex2d);

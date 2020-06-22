@@ -83,20 +83,22 @@ namespace VkInline
 
 		const char* code_body_vert() const { return m_code_body_vert.c_str(); }
 		const char* code_body_frag() const { return m_code_body_frag.c_str(); }
-		bool depth_enable() const { return m_depth_enable; }
-		bool depth_write() const { return m_depth_write; }
-		bool color_write() const { return m_color_write; }
-		bool alpha_write() const { return m_alpha_write; }
-		bool alpha_blend() const { return m_alpha_blend; }
+
+		size_t size_states() const;
+		void get_states(void* p_data) const;
+		
 
 	private:
 		std::string m_code_body_vert;
 		std::string m_code_body_frag;
+		
 		bool m_depth_enable;
 		bool m_depth_write;
 		bool m_color_write;
 		bool m_alpha_write;
 		bool m_alpha_blend;
+
+		char m_dummy;
 	};
 
 	class Rasterizer
