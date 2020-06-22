@@ -1058,7 +1058,7 @@ namespace VkInline
 			m_has_depth_attachment = depth_attachmentInfo != nullptr;
 			m_num_resolve_attachments = resolve_attachmentInfo.size();
 			m_sample_count = 1;
-			if (m_num_resolve_attachments > 1)
+			if (m_num_resolve_attachments > 0)
 				m_sample_count = color_attachmentInfo[0].sample_count;
 
 			m_sampler = nullptr;
