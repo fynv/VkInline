@@ -50,6 +50,7 @@ void main()
 	vec3 norm = get_value(arr_norm, get_value(ind_norm, gl_VertexIndex));
 	vec4 pos_trans = mat_pos*vec4(pos, 1.0);
 	pos_trans.y = -pos_trans.y;
+	pos_trans.z = (pos_trans.z + pos_trans.w) / 2.0;
 	gl_Position = pos_trans;
 	vec4 norm_trans = mat_norm*vec4(norm, 0.0);
 	vNorm = norm_trans.xyz;
