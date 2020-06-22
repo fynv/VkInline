@@ -145,14 +145,15 @@ class Rasterizer:
         self.m_draw_calls += [draw_call]
         native.n_rasterizer_add_draw_call(self.m_cptr, draw_call.m_cptr)
 
-    def launch(self, vertex_counts, colorBufs, depthBuf, clear_colors, clear_depth, args, tex2ds=[]):
+    def launch(self, vertex_counts, colorBufs, depthBuf, clear_colors, clear_depth, args, tex2ds=[], resolveBufs=[]):
         colorBuf_list = Texture2DArray(colorBufs)
         p_depthBuf = ffi.NULL
         if depthBuf!=None:
             p_depthBuf = depthBuf.m_cptr
+        resolveBuf_list = Texture2DArray(resolveBufs)
         arg_list = ObjArray(args)
         tex2d_list = Texture2DArray(tex2ds)
-        native.n_rasterizer_launch(self.m_cptr, colorBuf_list.m_cptr, p_depthBuf, clear_colors, clear_depth, arg_list.m_cptr, tex2d_list.m_cptr, vertex_counts)
+        native.n_rasterizer_launch(self.m_cptr, colorBuf_list.m_cptr, p_depthBuf, resolveBuf_list.m_cptr, clear_colors, clear_depth, arg_list.m_cptr, tex2d_list.m_cptr, vertex_counts)
 
 
 

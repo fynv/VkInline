@@ -245,6 +245,7 @@ namespace VkInline
 		struct AttachmentInfo
 		{
 			VkFormat format;
+			VkSampleCountFlagBits sample_count;
 			bool clear_at_load;
 		};
 
@@ -266,6 +267,7 @@ namespace VkInline
 			RenderPass(
 				const std::vector<AttachmentInfo>& color_attachmentInfo,
 				const AttachmentInfo* depth_attachmentInfo,
+				const std::vector<AttachmentInfo>& resolve_attachmentInfo,
 				const std::vector<GraphicsPipelineInfo>& pipelineInfo,
 				size_t num_tex2d);
 
@@ -277,6 +279,8 @@ namespace VkInline
 			size_t num_pipelines() const { return m_pipelines.size(); }
 			size_t num_color_attachments() const { return m_num_color_attachments; }
 			bool has_depth_attachment() const { return m_has_depth_attachment; }
+			size_t num_resolve_attachments() const { return m_num_resolve_attachments; }
+			unsigned sample_count() const { return m_sample_count;  }
 			const VkPipeline& pipeline(int i) const { return m_pipelines[i]; }
 			size_t num_tex2d() const { return m_num_tex2d; }
 			Sampler* sampler() const { return m_sampler; }
@@ -290,6 +294,8 @@ namespace VkInline
 
 			size_t m_num_color_attachments;
 			bool m_has_depth_attachment;
+			size_t m_num_resolve_attachments;
+			unsigned m_sample_count;
 			
 			size_t m_num_tex2d;
 			Sampler* m_sampler;		
@@ -305,7 +311,7 @@ namespace VkInline
 			~RenderPassCommandBuffer();
 
 			virtual void Recycle();
-			void draw(Texture2D** colorBufs, Texture2D* depthBuf, float* clear_colors, float clear_depth,
+			void draw(Texture2D** colorBufs, Texture2D* depthBuf, Texture2D** resolveBufs, float* clear_colors, float clear_depth,
 				void* param_data, Texture2D** tex2ds, unsigned* vertex_counts);
 			
 		private:

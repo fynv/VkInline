@@ -1050,11 +1050,17 @@ namespace VkInline
 		RenderPass::RenderPass(
 			const std::vector<AttachmentInfo>& color_attachmentInfo,
 			const AttachmentInfo* depth_attachmentInfo,
+			const std::vector<AttachmentInfo>& resolve_attachmentInfo,
 			const std::vector<GraphicsPipelineInfo>& pipelineInfo,
 			size_t num_tex2d)
 		{
 			m_num_color_attachments = color_attachmentInfo.size();
 			m_has_depth_attachment = depth_attachmentInfo != nullptr;
+			m_num_resolve_attachments = resolve_attachmentInfo.size();
+			m_sample_count = 1;
+			if (m_num_resolve_attachments > 1)
+				m_sample_count = color_attachmentInfo[0].sample_count;
+
 			m_sampler = nullptr;
 			const Context* ctx = Context::get_context();
 			{
@@ -1099,7 +1105,7 @@ namespace VkInline
 				{
 					attachments[i] = {};
 					attachments[i].format = color_attachmentInfo[i].format;
-					attachments[i].samples = VK_SAMPLE_COUNT_1_BIT;
+					attachments[i].samples = color_attachmentInfo[i].sample_count;
 					attachments[i].loadOp = color_attachmentInfo[i].clear_at_load? VK_ATTACHMENT_LOAD_OP_CLEAR: VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 					attachments[i].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 					attachments[i].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -1112,7 +1118,7 @@ namespace VkInline
 				{
 					VkAttachmentDescription depth_attachment = {};
 					depth_attachment.format = depth_attachmentInfo->format;
-					depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+					depth_attachment.samples = depth_attachmentInfo->sample_count;
 					depth_attachment.loadOp = depth_attachmentInfo->clear_at_load? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 					depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 					depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -1120,6 +1126,20 @@ namespace VkInline
 					depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 					depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 					attachments.push_back(depth_attachment);
+				}
+
+				for (size_t i = 0; i < resolve_attachmentInfo.size(); i++)
+				{
+					VkAttachmentDescription colorAttachmentResolve = {};
+					colorAttachmentResolve.format = resolve_attachmentInfo[i].format;
+					colorAttachmentResolve.samples = resolve_attachmentInfo[i].sample_count;
+					colorAttachmentResolve.loadOp = resolve_attachmentInfo[i].clear_at_load? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+					colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+					colorAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+					colorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+					colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+					colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+					attachments.push_back(colorAttachmentResolve);
 				}
 
 				std::vector<VkAttachmentReference> colorAttachmentRefs(color_attachmentInfo.size());
@@ -1133,6 +1153,15 @@ namespace VkInline
 				VkAttachmentReference depthAttachmentRef = {};
 				depthAttachmentRef.attachment = (unsigned)color_attachmentInfo.size();
 				depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+				
+				std::vector<VkAttachmentReference> colorAttachmentResolveRefs(resolve_attachmentInfo.size());
+				for (size_t i = 0; i < resolve_attachmentInfo.size(); i++)
+				{
+					colorAttachmentResolveRefs[i] = {};
+					colorAttachmentResolveRefs[i].attachment = (unsigned)i + (unsigned)color_attachmentInfo.size() + (depth_attachmentInfo != nullptr?1:0);
+					colorAttachmentResolveRefs[i].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+				}
 
 				VkSubpassDescription subpass = {};
 				subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
@@ -1140,6 +1169,8 @@ namespace VkInline
 				subpass.pColorAttachments = colorAttachmentRefs.data();
 				if (depth_attachmentInfo != nullptr)
 					subpass.pDepthStencilAttachment = &depthAttachmentRef;
+				if (resolve_attachmentInfo.size() > 0)
+					subpass.pResolveAttachments = colorAttachmentResolveRefs.data();
 
 				VkRenderPassCreateInfo renderPassInfo = {};
 				renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -1189,7 +1220,7 @@ namespace VkInline
 
 				VkPipelineMultisampleStateCreateInfo multisampling = {};
 				multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-				multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+				multisampling.rasterizationSamples = (VkSampleCountFlagBits)m_sample_count;
 
 				std::vector<std::vector<VkPipelineColorBlendAttachmentState>> colorBlendAttachments(pipelineInfo.size());
 				std::vector<VkPipelineColorBlendStateCreateInfo> colorBlendings(pipelineInfo.size());
@@ -1415,7 +1446,7 @@ namespace VkInline
 			m_render_pass->recycler()->RecycleCommandBuffer(this);
 		}
 
-		void RenderPassCommandBuffer::draw(Texture2D** colorBufs, Texture2D* depthBuf, float* clear_colors, float clear_depth,
+		void RenderPassCommandBuffer::draw(Texture2D** colorBufs, Texture2D* depthBuf, Texture2D** resolveBufs, float* clear_colors, float clear_depth,
 			void* param_data, Texture2D** tex2ds, unsigned* vertex_counts)
 		{
 
@@ -1469,6 +1500,10 @@ namespace VkInline
 					views.push_back(depthBuf->view());
 					width = depthBuf->width();
 					height = depthBuf->height();
+				}
+				for (size_t i = 0; i < m_render_pass->num_resolve_attachments(); i++)
+				{
+					views.push_back(resolveBufs[i]->view());
 				}
 
 				{

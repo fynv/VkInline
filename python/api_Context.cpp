@@ -180,16 +180,17 @@ void n_rasterizer_add_draw_call(void* cptr, void* draw_call)
 	rasterizer->add_draw_call((DrawCall*)draw_call);
 }
 
-int n_rasterizer_launch(void* cptr, void* ptr_colorBufs, void* _depthBuf, float* clear_colors, float clear_depth,
-	void* ptr_arg_list, void* ptr_tex2d_list, unsigned* vertex_counts)
+int n_rasterizer_launch(void* cptr, void* ptr_colorBufs, void* _depthBuf, void* ptr_resolveBufs, 
+	float* clear_colors, float clear_depth,	void* ptr_arg_list, void* ptr_tex2d_list, unsigned* vertex_counts)
 {
 	Rasterizer* rasterizer = (Rasterizer*)cptr;
 	Tex2DArray* colorBufs = (Tex2DArray*)ptr_colorBufs;
 	Texture2D* depthBuf = (Texture2D*)_depthBuf;
+	Tex2DArray* resolveBufs = (Tex2DArray*)ptr_resolveBufs;
 	PtrArray* arg_list = (PtrArray*)ptr_arg_list;
 	Tex2DArray* tex2d_list = (Tex2DArray*)ptr_tex2d_list;
 
-	if (rasterizer->launch(*colorBufs, depthBuf, clear_colors, clear_depth, arg_list->data(), *tex2d_list, vertex_counts))
+	if (rasterizer->launch(*colorBufs, depthBuf, *resolveBufs, clear_colors, clear_depth, arg_list->data(), *tex2d_list, vertex_counts))
 		return 0;
 	else
 		return -1;

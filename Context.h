@@ -120,7 +120,7 @@ namespace VkInline
 		void set_clear_depth_buf(bool clear);
 
 		void add_draw_call(const DrawCall* draw_call);
-		bool launch(const std::vector<Texture2D*>&  colorBufs, Texture2D* depthBuf, float* clear_colors, float clear_depth,
+		bool launch(const std::vector<Texture2D*>& colorBufs, Texture2D* depthBuf, const std::vector<Texture2D*>& resolveBufs, float* clear_colors, float clear_depth,
 			const ShaderViewable** args, const std::vector<Texture2D*>& tex2ds, unsigned* vertex_counts);
 
 	private:

@@ -587,7 +587,7 @@ namespace VkInline
 	};
 
 	unsigned Context::_build_render_pass(
-		const std::vector <Internal::AttachmentInfo>& color_attachmentInfo, const Internal::AttachmentInfo* depth_attachmentInfo,
+		const std::vector <Internal::AttachmentInfo>& color_attachmentInfo, const Internal::AttachmentInfo* depth_attachmentInfo, const std::vector <Internal::AttachmentInfo>& resolve_attachmentInfo,
 		const std::vector<CapturedShaderViewable>& arg_map, size_t num_tex2d, const std::vector<const DrawCall*>& draw_calls)
 	{
 
@@ -596,6 +596,8 @@ namespace VkInline
 			sig.push_feature(&color_attachmentInfo[i], sizeof(Internal::AttachmentInfo));
 		if (depth_attachmentInfo!=nullptr)
 			sig.push_feature(depth_attachmentInfo, sizeof(Internal::AttachmentInfo));
+		for (size_t i = 0; i< resolve_attachmentInfo.size(); i++)
+			sig.push_feature(&resolve_attachmentInfo[i], sizeof(Internal::AttachmentInfo));
 
 		struct PipelineFeature
 		{
@@ -795,7 +797,7 @@ namespace VkInline
 			draw_calls[i]->get_states(&pipelineInfo[i].depth_enable);
 		}
 
-		Internal::RenderPass* renderpass = new Internal::RenderPass(color_attachmentInfo, depth_attachmentInfo, pipelineInfo, num_tex2d);
+		Internal::RenderPass* renderpass = new Internal::RenderPass(color_attachmentInfo, depth_attachmentInfo, resolve_attachmentInfo, pipelineInfo, num_tex2d);
 		m_cache_render_passes.push_back(renderpass);
 		rpid = (unsigned)m_cache_render_passes.size() - 1;
 		m_map_render_passes[hash_render_pass] = rpid;
@@ -803,7 +805,7 @@ namespace VkInline
 		return rpid;
 	}
 
-	bool Context::launch_rasterization(Texture2D* const* colorBufs, Texture2D* depthBuf, float* clear_colors, float clear_depth,
+	bool Context::launch_rasterization(Texture2D* const* colorBufs, Texture2D* depthBuf, Texture2D* const* resolveBufs, float* clear_colors, float clear_depth,
 		size_t num_params, const ShaderViewable** args, Texture2D* const* tex2ds, unsigned* vertex_counts, unsigned rpid, const size_t* offsets)
 	{
 		Internal::RenderPass* renderpass;
@@ -819,6 +821,10 @@ namespace VkInline
 		Internal::Texture2D* tex_depthBuf = nullptr;
 		if (renderpass->has_depth_attachment())
 			tex_depthBuf = depthBuf->internal();		
+
+		std::vector <Internal::Texture2D*> tex_resolveBufs(renderpass->num_resolve_attachments());
+		for (size_t i = 0; i < renderpass->num_resolve_attachments(); i++)
+			tex_resolveBufs[i] = resolveBufs[i]->internal();
 
 		ViewBuf h_uniform(offsets[num_params]);
 		for (size_t i = 0; i < num_params; i++)
@@ -846,7 +852,7 @@ namespace VkInline
 			i_tex2ds[i] = tex2ds[i]->internal();
 		}
 
-		cmdBuf->draw(tex_colorBufs.data(), tex_depthBuf, clear_colors, clear_depth, h_uniform.data(), i_tex2ds.data(), vertex_counts);
+		cmdBuf->draw(tex_colorBufs.data(), tex_depthBuf, tex_resolveBufs.data(), clear_colors, clear_depth, h_uniform.data(), i_tex2ds.data(), vertex_counts);
 
 		const Internal::Context* ctx = Internal::Context::get_context();
 		ctx->SubmitCommandBuffer(cmdBuf);
@@ -854,7 +860,7 @@ namespace VkInline
 		return true;
 	}
 
-	bool Context::launch_rasterization(const std::vector<Attachement>& colorBufs, Attachement depthBuf, float* clear_colors, float clear_depth,
+	bool Context::launch_rasterization(const std::vector<Attachement>& colorBufs, Attachement depthBuf, const std::vector<Attachement>& resolveBufs, float* clear_colors, float clear_depth,
 		const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const std::vector<const DrawCall*>& draw_calls, unsigned* vertex_counts)
 	{
 		std::vector <Internal::AttachmentInfo> color_attachmentInfo(colorBufs.size());
@@ -862,7 +868,8 @@ namespace VkInline
 		for (size_t i = 0; i < colorBufs.size(); i++)
 		{
 			color_attachmentInfo[i].format = (VkFormat)colorBufs[i].tex->vkformat();
-			color_attachmentInfo[i].clear_at_load = colorBufs[i].clear_at_load;
+			color_attachmentInfo[i].sample_count = (VkSampleCountFlagBits)colorBufs[i].tex->sample_count();
+			color_attachmentInfo[i].clear_at_load = colorBufs[i].clear_at_load;			
 			tex_colorBufs[i] = colorBufs[i].tex;
 		}
 
@@ -872,12 +879,23 @@ namespace VkInline
 		if (depthBuf.tex != nullptr)
 		{
 			depth_attachmentInfo.format = (VkFormat)depthBuf.tex->vkformat();
+			depth_attachmentInfo.sample_count = (VkSampleCountFlagBits)depthBuf.tex->sample_count();
 			depth_attachmentInfo.clear_at_load = depthBuf.clear_at_load;
 			p_depth_attachmentInfo = &depth_attachmentInfo;
 			tex_depthBuf = depthBuf.tex;
 		}		
 
-		unsigned rpid = _build_render_pass(color_attachmentInfo, p_depth_attachmentInfo, arg_map, tex2ds.size(), draw_calls);
+		std::vector <Internal::AttachmentInfo> resolve_attachmentInfo(resolveBufs.size());
+		std::vector <Texture2D*> tex_resolveBufs(resolveBufs.size());
+		for (size_t i = 0; i < resolveBufs.size(); i++)
+		{
+			resolve_attachmentInfo[i].format = (VkFormat)resolveBufs[i].tex->vkformat();
+			resolve_attachmentInfo[i].sample_count = (VkSampleCountFlagBits)resolveBufs[i].tex->sample_count();
+			resolve_attachmentInfo[i].clear_at_load = resolveBufs[i].clear_at_load;
+			tex_resolveBufs[i] = resolveBufs[i].tex;
+		}
+
+		unsigned rpid = _build_render_pass(color_attachmentInfo, p_depth_attachmentInfo, resolve_attachmentInfo, arg_map, tex2ds.size(), draw_calls);
 		if (rpid == (unsigned)(-1)) return false;
 	
 		// query uniform
@@ -909,10 +927,10 @@ namespace VkInline
 			args[i] = arg_map[i].obj;
 		}
 
-		return launch_rasterization(tex_colorBufs.data(), tex_depthBuf, clear_colors, clear_depth, arg_map.size(), args.data(), tex2ds.data(), vertex_counts, rpid, offsets.data());
+		return launch_rasterization(tex_colorBufs.data(), tex_depthBuf, tex_resolveBufs.data(), clear_colors, clear_depth, arg_map.size(), args.data(), tex2ds.data(), vertex_counts, rpid, offsets.data());
 	}
 
-	bool Context::launch_rasterization(const std::vector<Attachement>& colorBufs, Attachement depthBuf, float* clear_colors, float clear_depth,
+	bool Context::launch_rasterization(const std::vector<Attachement>& colorBufs, Attachement depthBuf, const std::vector<Attachement>& resolveBufs, float* clear_colors, float clear_depth,
 		const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const std::vector<const DrawCall*>& draw_calls, unsigned* vertex_counts, unsigned& rpid, size_t* offsets)
 	{
 		std::vector <Internal::AttachmentInfo> color_attachmentInfo(colorBufs.size());
@@ -920,6 +938,7 @@ namespace VkInline
 		for (size_t i = 0; i < colorBufs.size(); i++)
 		{
 			color_attachmentInfo[i].format = (VkFormat)colorBufs[i].tex->vkformat();
+			color_attachmentInfo[i].sample_count = (VkSampleCountFlagBits)colorBufs[i].tex->sample_count();
 			color_attachmentInfo[i].clear_at_load = colorBufs[i].clear_at_load;
 			tex_colorBufs[i] = colorBufs[i].tex;
 		}
@@ -930,12 +949,23 @@ namespace VkInline
 		if (depthBuf.tex != nullptr)
 		{
 			depth_attachmentInfo.format = (VkFormat)depthBuf.tex->vkformat();
+			depth_attachmentInfo.sample_count = (VkSampleCountFlagBits)depthBuf.tex->sample_count();
 			depth_attachmentInfo.clear_at_load = depthBuf.clear_at_load;
 			p_depth_attachmentInfo = &depth_attachmentInfo;
 			tex_depthBuf = depthBuf.tex;
 		}
 
-		rpid = _build_render_pass(color_attachmentInfo, p_depth_attachmentInfo, arg_map, tex2ds.size(), draw_calls);
+		std::vector <Internal::AttachmentInfo> resolve_attachmentInfo(resolveBufs.size());
+		std::vector <Texture2D*> tex_resolveBufs(resolveBufs.size());
+		for (size_t i = 0; i < resolveBufs.size(); i++)
+		{
+			resolve_attachmentInfo[i].format = (VkFormat)resolveBufs[i].tex->vkformat();
+			resolve_attachmentInfo[i].sample_count = (VkSampleCountFlagBits)resolveBufs[i].tex->sample_count();
+			resolve_attachmentInfo[i].clear_at_load = resolveBufs[i].clear_at_load;
+			tex_resolveBufs[i] = resolveBufs[i].tex;
+		}
+
+		rpid = _build_render_pass(color_attachmentInfo, p_depth_attachmentInfo, resolve_attachmentInfo, arg_map, tex2ds.size(), draw_calls);
 		if (rpid == (unsigned)(-1)) return false;
 
 		// query uniform
@@ -966,7 +996,7 @@ namespace VkInline
 			args[i] = arg_map[i].obj;
 		}
 
-		return launch_rasterization(tex_colorBufs.data(), tex_depthBuf, clear_colors, clear_depth, arg_map.size(), args.data(), tex2ds.data(), vertex_counts, rpid, offsets);
+		return launch_rasterization(tex_colorBufs.data(), tex_depthBuf, tex_resolveBufs.data(), clear_colors, clear_depth, arg_map.size(), args.data(), tex2ds.data(), vertex_counts, rpid, offsets);
 	}
 }
 
