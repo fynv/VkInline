@@ -154,12 +154,17 @@ namespace VkInline
 		return m_tex->channel_count();
 	}
 
+	unsigned Texture2D::sample_count() const
+	{
+		return m_tex->samples();
+	}
+
 	unsigned Texture2D::vkformat() const
 	{
 		return m_tex->format();
 	}
 
-	Texture2D::Texture2D(int width, int height, unsigned vkformat, bool isDepth, bool isStencil)
+	Texture2D::Texture2D(int width, int height, unsigned vkformat, bool isDepth, bool isStencil, unsigned sampleCount)
 	{
 		VkImageAspectFlags aspect = 0;
 		if (isDepth) aspect |= VK_IMAGE_ASPECT_DEPTH_BIT;
@@ -171,7 +176,7 @@ namespace VkInline
 			usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 		else
 			usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-		m_tex = new Internal::Texture2D(width, height, (VkFormat)vkformat, aspect, usage);
+		m_tex = new Internal::Texture2D(width, height, (VkFormat)vkformat, aspect, usage, (VkSampleCountFlagBits)sampleCount);
 
 	}
 

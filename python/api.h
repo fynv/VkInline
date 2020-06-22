@@ -151,12 +151,13 @@ extern "C"
 	PY_VkInline_API void n_svobjbuffer_update(void* cptr);
 
 	// Texture2D
-	PY_VkInline_API void* n_texture2d_create(int width, int height, unsigned vkformat, unsigned isDepth, unsigned isStencil);
+	PY_VkInline_API void* n_texture2d_create(int width, int height, unsigned vkformat, unsigned isDepth, unsigned isStencil, unsigned sampleCount);
 	PY_VkInline_API void n_texture2d_release(void* tex2d);
 	PY_VkInline_API int n_texture2d_width(void* _tex2d);
 	PY_VkInline_API int n_texture2d_height(void* _tex2d);
 	PY_VkInline_API unsigned n_texture2d_pixelsize(void* _tex2d);
 	PY_VkInline_API unsigned n_texture2d_channelcount(void* _tex2d);
+	PY_VkInline_API unsigned n_texture2d_samplecount(void* _tex2d);
 	PY_VkInline_API unsigned n_texture2d_vkformat(void* _tex2d);
 	PY_VkInline_API void n_texture2d_upload(void* _tex2d, void* hdata);
 	PY_VkInline_API void n_texture2d_download(void* _tex2d, void* hdata);

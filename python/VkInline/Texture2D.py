@@ -2,8 +2,8 @@ from .Native import ffi, native
 import numpy as np
 
 class Texture2D:
-    def __init__(self, width, height, vkformat, isDepth = False, isStencil=False):
-        self.m_cptr = native.n_texture2d_create(width, height, vkformat, isDepth, isStencil)
+    def __init__(self, width, height, vkformat, isDepth = False, isStencil=False, samples = 1):
+        self.m_cptr = native.n_texture2d_create(width, height, vkformat, isDepth, isStencil, samples)
 
     def __del__(self):
         native.n_texture2d_release(self.m_cptr)
@@ -19,6 +19,9 @@ class Texture2D:
 
     def channel_count(self):
         return native.n_texture2d_channelcount(self.m_cptr)
+
+    def sample_count(self):
+        return native.n_texture2d_samplecount(self.m_cptr)
 
     def vkformat(self):
         return native.n_texture2d_vkformat(self.m_cptr)

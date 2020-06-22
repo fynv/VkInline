@@ -148,12 +148,13 @@ unsigned long long n_svobjbuffer_size(void* cptr);
 void n_svobjbuffer_update(void* cptr);
 
 // Texture2D
-void* n_texture2d_create(int width, int height, unsigned vkformat, unsigned isDepth, unsigned isStencil);
+void* n_texture2d_create(int width, int height, unsigned vkformat, unsigned isDepth, unsigned isStencil, unsigned sampleCount);
 void n_texture2d_release(void* tex2d);
 int n_texture2d_width(void* _tex2d);
 int n_texture2d_height(void* _tex2d);
 unsigned n_texture2d_pixelsize(void* _tex2d);
 unsigned n_texture2d_channelcount(void* _tex2d);
+unsigned n_texture2d_samplecount(void* _tex2d);
 unsigned n_texture2d_vkformat(void* _tex2d);
 void n_texture2d_upload(void* _tex2d, void* hdata);
 void n_texture2d_download(void* _tex2d, void* hdata);

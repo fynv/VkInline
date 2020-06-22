@@ -163,11 +163,12 @@ namespace VkInline
 			unsigned channel_count() const;
 			const VkFormat& format() const { return m_format; }
 			const VkImageAspectFlags& aspect() const { return m_aspect; }
+			const VkSampleCountFlagBits& samples() const { return m_sampleCount; }
 			const VkImage& image() const { return m_image; }
 			const VkDeviceMemory& memory() const { return m_mem; }
 			const VkImageView& view() const { return m_view; }
 
-			Texture2D(int width, int height, VkFormat format, VkImageAspectFlags aspectFlags, VkImageUsageFlags usage);
+			Texture2D(int width, int height, VkFormat format, VkImageAspectFlags aspectFlags, VkImageUsageFlags usage, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT);
 			~Texture2D();
 
 			void upload(const void* hdata);
@@ -179,6 +180,7 @@ namespace VkInline
 			int m_height;
 			VkFormat m_format;
 			VkImageAspectFlags m_aspect;
+			VkSampleCountFlagBits m_sampleCount;
 			VkImage m_image;
 			VkDeviceMemory m_mem;
 			VkImageView m_view;

@@ -41,12 +41,13 @@ namespace VkInline
 		int height() const;
 		unsigned pixel_size() const;
 		unsigned channel_count() const;
+		unsigned sample_count() const;
 		unsigned vkformat() const;
 
 		Internal::Texture2D* internal() { return m_tex; }
 		const Internal::Texture2D* internal() const { return m_tex; }
 
-		Texture2D(int width, int height, unsigned vkformat, bool isDepth = false, bool isStencil = false);
+		Texture2D(int width, int height, unsigned vkformat, bool isDepth = false, bool isStencil = false, unsigned sampleCount = 1);
 		~Texture2D();
 
 		void upload(const void* hdata);

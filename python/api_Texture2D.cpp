@@ -2,9 +2,9 @@
 #include "Context.h"
 using namespace VkInline;
 
-void* n_texture2d_create(int width, int height, unsigned vkformat, unsigned isDepth, unsigned isStencil)
+void* n_texture2d_create(int width, int height, unsigned vkformat, unsigned isDepth, unsigned isStencil, unsigned sampleCount)
 {
-	return new Texture2D(width, height, vkformat, isDepth!=0, isStencil!=0);
+	return new Texture2D(width, height, vkformat, isDepth!=0, isStencil!=0, sampleCount);
 }
 
 void n_texture2d_release(void* tex2d)
@@ -34,6 +34,12 @@ unsigned n_texture2d_channelcount(void* _tex2d)
 {
 	Texture2D* tex2d = (Texture2D*)_tex2d;
 	return tex2d->channel_count();
+}
+
+unsigned n_texture2d_samplecount(void* _tex2d)
+{
+	Texture2D* tex2d = (Texture2D*)_tex2d;
+	return tex2d->sample_count();
 }
 
 unsigned n_texture2d_vkformat(void* _tex2d)

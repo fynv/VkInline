@@ -575,12 +575,13 @@ namespace VkInline
 			return FormatChannelCount(m_format);
 		}
 
-		Texture2D::Texture2D(int width, int height, VkFormat format, VkImageAspectFlags aspectFlags, VkImageUsageFlags usage)
+		Texture2D::Texture2D(int width, int height, VkFormat format, VkImageAspectFlags aspectFlags, VkImageUsageFlags usage, VkSampleCountFlagBits sampleCount)
 		{
 			m_width = width;
 			m_height = height;
 			m_format = format;
 			m_aspect = aspectFlags;
+			m_sampleCount = sampleCount;
 			if (width == 0 || height == 0) return;
 
 			const Context* ctx = Context::get_context();
@@ -613,7 +614,7 @@ namespace VkInline
 			imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 			imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 			imageInfo.usage = usage;
-			imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+			imageInfo.samples = sampleCount;
 			imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 			vkCreateImage(ctx->device(), &imageInfo, nullptr, &m_image);
@@ -669,8 +670,8 @@ namespace VkInline
 		class CommandBuf_TexUpload : public AutoCommandBuffer
 		{
 		public:
-			CommandBuf_TexUpload(int width, int height, unsigned pixel_size, VkImage image, VkImageAspectFlags aspectFlags, const void* hdata)
-				: m_staging_buf(width*height*pixel_size)
+			CommandBuf_TexUpload(int width, int height, unsigned pixel_size, unsigned samples, VkImage image, VkImageAspectFlags aspectFlags, const void* hdata)
+				: m_staging_buf(width*height*pixel_size*samples)
 			{
 				m_staging_buf.upload(hdata);
 
@@ -724,7 +725,7 @@ namespace VkInline
 
 		void Texture2D::upload(const void* hdata)
 		{
-			auto cmdBuf = new CommandBuf_TexUpload(m_width, m_height, pixel_size(), m_image, m_aspect, hdata);
+			auto cmdBuf = new CommandBuf_TexUpload(m_width, m_height, pixel_size(), m_sampleCount, m_image, m_aspect, hdata);
 			const Context* ctx = Context::get_context();
 			ctx->SubmitCommandBuffer(cmdBuf);
 		}
@@ -732,7 +733,7 @@ namespace VkInline
 		void Texture2D::download(void* hdata) const
 		{
 			if (m_width == 0 || m_height == 0) return;
-			DownloadBuffer staging_buf(m_width*m_height*pixel_size());
+			DownloadBuffer staging_buf(m_width*m_height*pixel_size()*m_sampleCount);
 
 			auto cmdBuf = new AutoCommandBuffer;
 
