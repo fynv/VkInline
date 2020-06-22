@@ -114,7 +114,10 @@ class DrawCall:
             native.n_drawcall_set_alpha_write(self.m_cptr, options['alpha_write'])
 
         if 'alpha_blend' in options:
-            native.n_drawcall_set_alpha_blend(self.m_cptr, options['alpha_blend'])            
+            native.n_drawcall_set_alpha_blend(self.m_cptr, options['alpha_blend'])
+
+        if 'depth_compare_op' in options:
+            native.n_drawcall_set_depth_compare_op(self.m_cptr, options['depth_compare_op'])
 
     def __del__(self):
         native.n_drawcall_destroy(self.m_cptr)

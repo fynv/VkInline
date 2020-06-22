@@ -80,6 +80,7 @@ namespace VkInline
 		void set_color_write(bool enable) { m_color_write = enable; }
 		void set_alpha_write(bool enable) { m_alpha_write = enable; }
 		void set_alpha_blend(bool enable) { m_alpha_blend = enable;  }
+		void set_depth_comapre_op(unsigned op) { m_compare_op = op; }
 
 		const char* code_body_vert() const { return m_code_body_vert.c_str(); }
 		const char* code_body_frag() const { return m_code_body_frag.c_str(); }
@@ -97,6 +98,7 @@ namespace VkInline
 		bool m_color_write;
 		bool m_alpha_write;
 		bool m_alpha_blend;
+		unsigned m_compare_op;
 
 		char m_dummy;
 	};

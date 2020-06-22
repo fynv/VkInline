@@ -132,6 +132,12 @@ void n_drawcall_set_alpha_blend(void* cptr, unsigned enable)
 	dc->set_alpha_blend(enable != 0);
 }
 
+void n_drawcall_set_depth_compare_op(void* cptr, unsigned op)
+{
+	DrawCall* dc = (DrawCall*)cptr;
+	dc->set_depth_comapre_op(op);
+}
+
 void* n_rasterizer_create(void* ptr_param_list)
 {
 	StrArray* param_list = (StrArray*)ptr_param_list;

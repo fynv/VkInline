@@ -1259,7 +1259,7 @@ namespace VkInline
 					depthStencils[i].sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 					depthStencils[i].depthTestEnable = pipelineInfo[i].depth_enable? VK_TRUE : VK_FALSE;
 					depthStencils[i].depthWriteEnable = pipelineInfo[i].depth_write? VK_TRUE : VK_FALSE;
-					depthStencils[i].depthCompareOp = VK_COMPARE_OP_LESS;
+					depthStencils[i].depthCompareOp = (VkCompareOp)pipelineInfo[i].compare_op;
 
 					pipelines[i] = {};
 					pipelines[i].sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;

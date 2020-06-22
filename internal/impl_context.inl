@@ -558,6 +558,7 @@ namespace VkInline
 			bool color_write;
 			bool alpha_write;
 			bool alpha_blend;
+			unsigned compare_op;
 		};
 
 

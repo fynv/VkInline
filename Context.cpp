@@ -242,6 +242,7 @@ namespace VkInline
 		m_color_write = true;
 		m_alpha_write = true;
 		m_alpha_blend = false;
+		m_compare_op = 1;
 	}
 
 	size_t DrawCall::size_states() const
