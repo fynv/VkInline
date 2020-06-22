@@ -22,9 +22,9 @@ def Wait():
     native.n_wait()
 
 class Computer:
-    def __init__(self, param_names, body):
+    def __init__(self, param_names, body, type_locked=False):
         o_param_names = StrArray(param_names)
-        self.m_cptr = native.n_computer_create(o_param_names.m_cptr, body.encode('utf-8'))
+        self.m_cptr = native.n_computer_create(o_param_names.m_cptr, body.encode('utf-8'), type_locked)
 
     def __del__(self):
         native.n_computer_destroy(self.m_cptr)
@@ -45,7 +45,7 @@ class Computer:
             tex2d_list.m_cptr)
 
 class For:
-    def __init__(self, param_names, name_inner, body, block_size=128):
+    def __init__(self, param_names, name_inner, body, block_size=128, type_locked=False):
         self.block_size = block_size
         param_names = param_names + ['_begin', '_end']
         o_param_names = StrArray(param_names)
@@ -57,7 +57,7 @@ void main()
     {0}(id);
 }}
 '''.format(name_inner)
-        self.m_cptr = native.n_computer_create(o_param_names.m_cptr, whole_body.encode('utf-8'))
+        self.m_cptr = native.n_computer_create(o_param_names.m_cptr, whole_body.encode('utf-8'), type_locked)
 
     def __del__(self):
         native.n_computer_destroy(self.m_cptr)
@@ -124,9 +124,9 @@ class DrawCall:
 
 
 class Rasterizer:
-    def __init__(self, param_names):
+    def __init__(self, param_names, type_locked=False):
         o_param_names = StrArray(param_names)
-        self.m_cptr = native.n_rasterizer_create(o_param_names.m_cptr)
+        self.m_cptr = native.n_rasterizer_create(o_param_names.m_cptr, type_locked)
         self.m_draw_calls = []
 
     def __del__(self):

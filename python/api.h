@@ -30,7 +30,7 @@ extern "C"
 	PY_VkInline_API void n_add_code_block(const char* line);
 	PY_VkInline_API void n_wait();
 
-	PY_VkInline_API void* n_computer_create(void* ptr_param_list, const char* body);
+	PY_VkInline_API void* n_computer_create(void* ptr_param_list, const char* body, unsigned type_locked);
 	PY_VkInline_API void n_computer_destroy(void* cptr);
 	PY_VkInline_API int n_computer_num_params(void* cptr);
 	PY_VkInline_API int n_computer_launch(void* ptr_kernel, void* ptr_gridDim, void* ptr_blockDim, void* ptr_arg_list, void* ptr_tex2d_list);
@@ -45,7 +45,7 @@ extern "C"
 	PY_VkInline_API void n_drawcall_set_alpha_blend(void* cptr, unsigned enable);
 	PY_VkInline_API void n_drawcall_set_depth_compare_op(void* cptr, unsigned op);
 
-	PY_VkInline_API void* n_rasterizer_create(void* ptr_param_list);
+	PY_VkInline_API void* n_rasterizer_create(void* ptr_param_list, unsigned type_locked);
 	PY_VkInline_API void n_rasterizer_destroy(void* cptr);
 	PY_VkInline_API int n_rasterizer_num_params(void* cptr);
 	PY_VkInline_API void n_rasterizer_set_clear_color_buf(void* cptr, int i, unsigned clear);

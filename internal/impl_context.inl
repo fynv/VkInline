@@ -448,16 +448,52 @@ namespace VkInline
 		return kid;
 	}
 
-	bool Context::launch_compute(dim_type gridDim, dim_type blockDim, const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const char* code_body)
+	bool Context::launch_compute(dim_type gridDim, size_t num_params, const ShaderViewable** args, Texture2D* const* tex2ds, unsigned kid, const size_t* offsets)
 	{
-		unsigned kid = _build_compute_pipeline(blockDim, arg_map, tex2ds.size(), code_body);
-		if (kid == (unsigned)(-1)) return false;
 		Internal::ComputePipeline* pipeline;
 		{
 			std::shared_lock<std::shared_mutex> lock(m_mutex_compute_pipelines);
 			pipeline = m_cache_compute_pipelines[kid];
 		}
 
+		ViewBuf h_uniform(offsets[num_params]);
+		for (size_t i = 0; i < num_params; i++)
+		{
+			ViewBuf vb = args[i]->view();
+			memcpy(h_uniform.data() + offsets[i], vb.data(), vb.size());
+		}
+
+		Internal::CommandBufferRecycler* recycler = pipeline->recycler();
+		Internal::ComputeCommandBuffer* cmdBuf = (Internal::ComputeCommandBuffer*)recycler->RetriveCommandBuffer();
+		if (cmdBuf == nullptr)
+		{
+			cmdBuf = new Internal::ComputeCommandBuffer(pipeline, offsets[num_params]);
+		}
+
+		for (size_t i = 0; i < num_params; i++)
+		{
+			args[i]->apply_barriers(*cmdBuf, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+		}
+
+		std::vector<Internal::Texture2D*> i_tex2ds(pipeline->num_tex2d());
+		for (size_t i = 0; i < pipeline->num_tex2d(); i++)
+		{
+			tex2ds[i]->apply_barrier_as_texture(*cmdBuf, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+			i_tex2ds[i] = tex2ds[i]->internal();
+		}
+		cmdBuf->dispatch(h_uniform.data(), i_tex2ds.data(), gridDim.x, gridDim.y, gridDim.z);
+
+		const Internal::Context* ctx = Internal::Context::get_context();
+		ctx->SubmitCommandBuffer(cmdBuf);
+
+		return true;
+	}
+
+	bool Context::launch_compute(dim_type gridDim, dim_type blockDim, const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const char* code_body)
+	{
+		unsigned kid = _build_compute_pipeline(blockDim, arg_map, tex2ds.size(), code_body);
+		if (kid == (unsigned)(-1)) return false;
+		
 		// query uniform
 		std::vector<size_t> offsets(arg_map.size() + 1);
 
@@ -481,38 +517,50 @@ namespace VkInline
 			std::string name = std::string("Uni_") + add_dynamic_code(structure.c_str());
 			query_struct(name.c_str(), offsets.data());
 		}
-
-		ViewBuf h_uniform(offsets[arg_map.size()]);
+		
+		std::vector<const ShaderViewable*> args(arg_map.size());
 		for (size_t i = 0; i < arg_map.size(); i++)
 		{
-			ViewBuf vb = arg_map[i].obj->view();
-			memcpy(h_uniform.data() + offsets[i], vb.data(), vb.size());
+			args[i] = arg_map[i].obj;
 		}
 
-		Internal::CommandBufferRecycler* recycler = pipeline->recycler();
-		Internal::ComputeCommandBuffer* cmdBuf = (Internal::ComputeCommandBuffer*)recycler->RetriveCommandBuffer();
-		if (cmdBuf ==nullptr)
+		return launch_compute(gridDim, arg_map.size(), args.data(), tex2ds.data(), kid, offsets.data());		
+	}
+
+	bool Context::launch_compute(dim_type gridDim, dim_type blockDim, const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const char* code_body, unsigned& kid, size_t* offsets)
+	{
+		kid = _build_compute_pipeline(blockDim, arg_map, tex2ds.size(), code_body);
+		if (kid == (unsigned)(-1)) return false;
+
+		// query uniform
+		if (arg_map.size() < 1)
 		{
-			cmdBuf = new Internal::ComputeCommandBuffer(pipeline, offsets[arg_map.size()]);
+			offsets[0] = 0;
+		}
+		else
+		{
+			std::string structure =
+				"struct Uni_#hash#\n"
+				"{\n";
+
+			char line[1024];
+			for (size_t i = 0; i < arg_map.size(); i++)
+			{
+				sprintf(line, "    %s %s;\n", arg_map[i].obj->name_view_type().c_str(), arg_map[i].obj_name);
+				structure += line;
+			}
+			structure += "};\n";
+			std::string name = std::string("Uni_") + add_dynamic_code(structure.c_str());
+			query_struct(name.c_str(), offsets);
 		}
 
+		std::vector<const ShaderViewable*> args(arg_map.size());
 		for (size_t i = 0; i < arg_map.size(); i++)
 		{
-			arg_map[i].obj->apply_barriers(*cmdBuf, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+			args[i] = arg_map[i].obj;
 		}
 
-		std::vector<Internal::Texture2D*> i_tex2ds(tex2ds.size());
-		for (size_t i = 0; i < i_tex2ds.size(); i++)
-		{
-			tex2ds[i]->apply_barrier_as_texture(*cmdBuf, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-			i_tex2ds[i] = tex2ds[i]->internal();
-		}
-		cmdBuf->dispatch(h_uniform.data(), i_tex2ds.data(), gridDim.x, gridDim.y, gridDim.z);
-
-		const Internal::Context* ctx = Internal::Context::get_context();
-		ctx->SubmitCommandBuffer(cmdBuf);
-
-		return true;
+		return launch_compute(gridDim, arg_map.size(), args.data(), tex2ds.data(), kid, offsets);
 	}
 
 	class Signature
@@ -755,37 +803,83 @@ namespace VkInline
 		return rpid;
 	}
 
-	bool Context::launch_rasterization(const std::vector<Attachement>& colorBufs, Attachement depthBuf, float* clear_colors, float clear_depth,
-		const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const std::vector<const DrawCall*>& draw_calls, unsigned* vertex_counts)
+	bool Context::launch_rasterization(Texture2D* const* colorBufs, Texture2D* depthBuf, float* clear_colors, float clear_depth,
+		size_t num_params, const ShaderViewable** args, Texture2D* const* tex2ds, unsigned* vertex_counts, unsigned rpid, const size_t* offsets)
 	{
-		std::vector <Internal::AttachmentInfo> color_attachmentInfo(colorBufs.size());
-		std::vector <Internal::Texture2D*> tex_colorBufs(colorBufs.size());
-		for (size_t i = 0; i < colorBufs.size(); i++)
-		{
-			color_attachmentInfo[i].format = (VkFormat)colorBufs[i].tex->vkformat();
-			color_attachmentInfo[i].clear_at_load = colorBufs[i].clear_at_load;
-			tex_colorBufs[i] = colorBufs[i].tex->internal();
-		}
-
-		Internal::AttachmentInfo depth_attachmentInfo;
-		Internal::AttachmentInfo* p_depth_attachmentInfo = nullptr;
-		Internal::Texture2D* tex_depthBuf = nullptr;
-		if (depthBuf.tex != nullptr)
-		{
-			depth_attachmentInfo.format = (VkFormat)depthBuf.tex->vkformat();
-			depth_attachmentInfo.clear_at_load = depthBuf.clear_at_load;
-			p_depth_attachmentInfo = &depth_attachmentInfo;
-			tex_depthBuf = depthBuf.tex->internal();
-		}		
-
-		unsigned rpid = _build_render_pass(color_attachmentInfo, p_depth_attachmentInfo, arg_map, tex2ds.size(), draw_calls);
-		if (rpid == (unsigned)(-1)) return false;
 		Internal::RenderPass* renderpass;
 		{
 			std::shared_lock<std::shared_mutex> lock(m_mutex_render_passes);
 			renderpass = m_cache_render_passes[rpid];
 		}
 
+		std::vector <Internal::Texture2D*> tex_colorBufs(renderpass->num_color_attachments());
+		for (size_t i = 0; i < renderpass->num_color_attachments(); i++)
+			tex_colorBufs[i] = colorBufs[i]->internal();
+
+		Internal::Texture2D* tex_depthBuf = nullptr;
+		if (renderpass->has_depth_attachment())
+			tex_depthBuf = depthBuf->internal();		
+
+		ViewBuf h_uniform(offsets[num_params]);
+		for (size_t i = 0; i < num_params; i++)
+		{
+			ViewBuf vb = args[i]->view();
+			memcpy(h_uniform.data() + offsets[i], vb.data(), vb.size());
+		}
+
+		Internal::CommandBufferRecycler* recycler = renderpass->recycler();
+		Internal::RenderPassCommandBuffer* cmdBuf = (Internal::RenderPassCommandBuffer*)recycler->RetriveCommandBuffer();
+		if (cmdBuf == nullptr)
+		{
+			cmdBuf = new Internal::RenderPassCommandBuffer(renderpass, offsets[num_params]);
+		}
+
+		for (size_t i = 0; i < num_params; i++)
+		{
+			args[i]->apply_barriers(*cmdBuf, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+		}
+
+		std::vector<Internal::Texture2D*> i_tex2ds(renderpass->num_tex2d());
+		for (size_t i = 0; i < i_tex2ds.size(); i++)
+		{
+			tex2ds[i]->apply_barrier_as_texture(*cmdBuf, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+			i_tex2ds[i] = tex2ds[i]->internal();
+		}
+
+		cmdBuf->draw(tex_colorBufs.data(), tex_depthBuf, clear_colors, clear_depth, h_uniform.data(), i_tex2ds.data(), vertex_counts);
+
+		const Internal::Context* ctx = Internal::Context::get_context();
+		ctx->SubmitCommandBuffer(cmdBuf);
+
+		return true;
+	}
+
+	bool Context::launch_rasterization(const std::vector<Attachement>& colorBufs, Attachement depthBuf, float* clear_colors, float clear_depth,
+		const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const std::vector<const DrawCall*>& draw_calls, unsigned* vertex_counts)
+	{
+		std::vector <Internal::AttachmentInfo> color_attachmentInfo(colorBufs.size());
+		std::vector <Texture2D*> tex_colorBufs(colorBufs.size());
+		for (size_t i = 0; i < colorBufs.size(); i++)
+		{
+			color_attachmentInfo[i].format = (VkFormat)colorBufs[i].tex->vkformat();
+			color_attachmentInfo[i].clear_at_load = colorBufs[i].clear_at_load;
+			tex_colorBufs[i] = colorBufs[i].tex;
+		}
+
+		Internal::AttachmentInfo depth_attachmentInfo;
+		Internal::AttachmentInfo* p_depth_attachmentInfo = nullptr;
+		Texture2D* tex_depthBuf = nullptr;
+		if (depthBuf.tex != nullptr)
+		{
+			depth_attachmentInfo.format = (VkFormat)depthBuf.tex->vkformat();
+			depth_attachmentInfo.clear_at_load = depthBuf.clear_at_load;
+			p_depth_attachmentInfo = &depth_attachmentInfo;
+			tex_depthBuf = depthBuf.tex;
+		}		
+
+		unsigned rpid = _build_render_pass(color_attachmentInfo, p_depth_attachmentInfo, arg_map, tex2ds.size(), draw_calls);
+		if (rpid == (unsigned)(-1)) return false;
+	
 		// query uniform
 		std::vector<size_t> offsets(arg_map.size() + 1);
 		if (arg_map.size() < 1)
@@ -809,38 +903,70 @@ namespace VkInline
 			query_struct(name.c_str(), offsets.data());
 		}
 
-		ViewBuf h_uniform(offsets[arg_map.size()]);
+		std::vector<const ShaderViewable*> args(arg_map.size());
 		for (size_t i = 0; i < arg_map.size(); i++)
 		{
-			ViewBuf vb = arg_map[i].obj->view();
-			memcpy(h_uniform.data() + offsets[i], vb.data(), vb.size());
+			args[i] = arg_map[i].obj;
 		}
 
-		Internal::CommandBufferRecycler* recycler = renderpass->recycler();
-		Internal::RenderPassCommandBuffer* cmdBuf = (Internal::RenderPassCommandBuffer*)recycler->RetriveCommandBuffer();
-		if (cmdBuf == nullptr)
+		return launch_rasterization(tex_colorBufs.data(), tex_depthBuf, clear_colors, clear_depth, arg_map.size(), args.data(), tex2ds.data(), vertex_counts, rpid, offsets.data());
+	}
+
+	bool Context::launch_rasterization(const std::vector<Attachement>& colorBufs, Attachement depthBuf, float* clear_colors, float clear_depth,
+		const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const std::vector<const DrawCall*>& draw_calls, unsigned* vertex_counts, unsigned& rpid, size_t* offsets)
+	{
+		std::vector <Internal::AttachmentInfo> color_attachmentInfo(colorBufs.size());
+		std::vector <Texture2D*> tex_colorBufs(colorBufs.size());
+		for (size_t i = 0; i < colorBufs.size(); i++)
 		{
-			cmdBuf = new Internal::RenderPassCommandBuffer(renderpass, offsets[arg_map.size()]);
+			color_attachmentInfo[i].format = (VkFormat)colorBufs[i].tex->vkformat();
+			color_attachmentInfo[i].clear_at_load = colorBufs[i].clear_at_load;
+			tex_colorBufs[i] = colorBufs[i].tex;
 		}
 
+		Internal::AttachmentInfo depth_attachmentInfo;
+		Internal::AttachmentInfo* p_depth_attachmentInfo = nullptr;
+		Texture2D* tex_depthBuf = nullptr;
+		if (depthBuf.tex != nullptr)
+		{
+			depth_attachmentInfo.format = (VkFormat)depthBuf.tex->vkformat();
+			depth_attachmentInfo.clear_at_load = depthBuf.clear_at_load;
+			p_depth_attachmentInfo = &depth_attachmentInfo;
+			tex_depthBuf = depthBuf.tex;
+		}
+
+		rpid = _build_render_pass(color_attachmentInfo, p_depth_attachmentInfo, arg_map, tex2ds.size(), draw_calls);
+		if (rpid == (unsigned)(-1)) return false;
+
+		// query uniform
+		if (arg_map.size() < 1)
+		{
+			offsets[0] = 0;
+		}
+		else
+		{
+			std::string structure =
+				"struct Uni_#hash#\n"
+				"{\n";
+
+			char line[1024];
+			for (size_t i = 0; i < arg_map.size(); i++)
+			{
+				sprintf(line, "    %s %s;\n", arg_map[i].obj->name_view_type().c_str(), arg_map[i].obj_name);
+				structure += line;
+			}
+			structure += "};\n";
+			std::string name = std::string("Uni_") + add_dynamic_code(structure.c_str());
+			query_struct(name.c_str(), offsets);
+		}
+
+		std::vector<const ShaderViewable*> args(arg_map.size());
 		for (size_t i = 0; i < arg_map.size(); i++)
 		{
-			arg_map[i].obj->apply_barriers(*cmdBuf, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+			args[i] = arg_map[i].obj;
 		}
 
-		std::vector<Internal::Texture2D*> i_tex2ds(tex2ds.size());
-		for (size_t i = 0; i < i_tex2ds.size(); i++)
-		{
-			tex2ds[i]->apply_barrier_as_texture(*cmdBuf, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
-			i_tex2ds[i] = tex2ds[i]->internal();
-		}
-
-		cmdBuf->draw(tex_colorBufs.data(), tex_depthBuf, clear_colors, clear_depth, h_uniform.data(), i_tex2ds.data(), vertex_counts);
-
-		const Internal::Context* ctx = Internal::Context::get_context();
-		ctx->SubmitCommandBuffer(cmdBuf);
-
-		return true;
+		return launch_rasterization(tex_colorBufs.data(), tex_depthBuf, clear_colors, clear_depth, arg_map.size(), args.data(), tex2ds.data(), vertex_counts, rpid, offsets);
 	}
 }
 

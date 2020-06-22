@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <string>
 #include <thread>
+#include <mutex>
 #include "ShaderViewable.h"
 
 namespace VkInline
@@ -61,12 +62,17 @@ namespace VkInline
 	{
 	public:
 		size_t num_params() const { return m_param_names.size(); }
-		Computer(const std::vector<const char*>& param_names, const char* code_body);
+		Computer(const std::vector<const char*>& param_names, const char* code_body, bool type_locked = false);
 		bool launch(dim_type gridDim, dim_type blockDim, const ShaderViewable** args, const std::vector<Texture2D*>& tex2ds);
 
 	private:
 		std::vector<std::string> m_param_names;
 		std::string m_code_body;
+
+		bool m_type_locked;
+		unsigned m_kid;
+		std::vector<size_t> m_offsets;
+		std::mutex m_mu_type_lock;
 		
 	};
 
@@ -107,7 +113,7 @@ namespace VkInline
 	{
 	public:
 		size_t num_params() const { return m_param_names.size(); }
-		Rasterizer(const std::vector<const char*>& param_names);
+		Rasterizer(const std::vector<const char*>& param_names, bool type_locked = false);
 
 		void set_clear_color_buf(int i, bool clear);
 		void set_clear_depth_buf(bool clear);
@@ -121,6 +127,11 @@ namespace VkInline
 		std::vector<bool> m_clear_color_buf;
 		bool m_clear_depth_buf;
 		std::vector<const DrawCall*> m_draw_calls;
+
+		bool m_type_locked;
+		unsigned m_rpid;
+		std::vector<size_t> m_offsets;
+		std::mutex m_mu_type_lock;
 	};
 
 

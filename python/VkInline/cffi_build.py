@@ -29,7 +29,7 @@ void n_add_inlcude_filename(const char* fn);
 void n_add_code_block(const char* line);
 void n_wait();
 
-void* n_computer_create(void* ptr_param_list, const char* body);
+void* n_computer_create(void* ptr_param_list, const char* body, unsigned type_locked);
 void n_computer_destroy(void* cptr);
 int n_computer_num_params(void* cptr);
 int n_computer_launch(void* ptr_kernel, void* ptr_gridDim, void* ptr_blockDim, void* ptr_arg_list, void* ptr_tex2d_list);
@@ -42,7 +42,7 @@ void n_drawcall_set_color_write(void* cptr, unsigned enable);
 void n_drawcall_set_alpha_write(void* cptr, unsigned enable);
 void n_drawcall_set_alpha_blend(void* cptr, unsigned enable);
 void n_drawcall_set_depth_compare_op(void* cptr, unsigned op);
-void* n_rasterizer_create(void* ptr_param_list);
+void* n_rasterizer_create(void* ptr_param_list, unsigned type_locked);
 void n_rasterizer_destroy(void* cptr);
 int n_rasterizer_num_params(void* cptr);
 void n_rasterizer_set_clear_color_buf(void* cptr, int i, unsigned clear);

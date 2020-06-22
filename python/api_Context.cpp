@@ -43,14 +43,14 @@ void n_wait()
 	Wait();
 }
 
-void* n_computer_create(void* ptr_param_list, const char* body)
+void* n_computer_create(void* ptr_param_list, const char* body, unsigned type_locked)
 {
 	StrArray* param_list = (StrArray*)ptr_param_list;
 	size_t num_params = param_list->size();
 	std::vector<const char*> params(num_params);
 	for (size_t i = 0; i < num_params; i++)
 		params[i] = (*param_list)[i].c_str();
-	Computer* cptr = new Computer(params, body);
+	Computer* cptr = new Computer(params, body, type_locked!=0);
 	return cptr;
 }
 
@@ -138,7 +138,7 @@ void n_drawcall_set_depth_compare_op(void* cptr, unsigned op)
 	dc->set_depth_comapre_op(op);
 }
 
-void* n_rasterizer_create(void* ptr_param_list)
+void* n_rasterizer_create(void* ptr_param_list, unsigned type_locked)
 {
 	StrArray* param_list = (StrArray*)ptr_param_list;
 	size_t num_params = param_list->size();
@@ -147,7 +147,7 @@ void* n_rasterizer_create(void* ptr_param_list)
 	{
 		params[i] = (*param_list)[i].c_str();
 	}
-	Rasterizer* cptr = new Rasterizer(params);
+	Rasterizer* cptr = new Rasterizer(params, type_locked);
 	return cptr;
 }
 
