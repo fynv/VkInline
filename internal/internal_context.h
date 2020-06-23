@@ -229,13 +229,14 @@ namespace VkInline
 		class ComputePipeline
 		{
 		public:
-			ComputePipeline(const std::vector<unsigned>& spv, size_t num_tex2d);
+			ComputePipeline(const std::vector<unsigned>& spv, size_t num_tex2d, size_t num_tex3d);
 			~ComputePipeline();
 
 			const VkDescriptorSetLayout& layout_desc() const { return m_descriptorSetLayout; }
 			const VkPipelineLayout& layout_pipeline() const { return m_pipelineLayout; }
 			const VkPipeline& pipeline() const { return m_pipeline; }
 			size_t num_tex2d() const { return m_num_tex2d; }
+			size_t num_tex3d() const { return m_num_tex3d; }
 			Sampler* sampler() const { return m_sampler; }
 			CommandBufferRecycler* recycler() const;
 
@@ -245,6 +246,7 @@ namespace VkInline
 			VkPipeline m_pipeline;
 
 			size_t m_num_tex2d;
+			size_t m_num_tex3d;
 			Sampler* m_sampler;
 
 			std::unordered_map<std::thread::id, CommandBufferRecycler*>* m_recyclers;
@@ -259,7 +261,7 @@ namespace VkInline
 			~ComputeCommandBuffer();
 
 			virtual void Recycle();
-			void dispatch(void* param_data, Texture2D** tex2ds, unsigned dim_x, unsigned dim_y, unsigned dim_z);
+			void dispatch(void* param_data, Texture2D** tex2ds, Texture3D** tex3ds, unsigned dim_x, unsigned dim_y, unsigned dim_z);
 
 		private:
 			const ComputePipeline* m_pipeline;
@@ -296,7 +298,7 @@ namespace VkInline
 				const AttachmentInfo* depth_attachmentInfo,
 				const std::vector<AttachmentInfo>& resolve_attachmentInfo,
 				const std::vector<GraphicsPipelineInfo>& pipelineInfo,
-				size_t num_tex2d);
+				size_t num_tex2d, size_t num_tex3d);
 
 			~RenderPass();		
 
@@ -310,6 +312,7 @@ namespace VkInline
 			unsigned sample_count() const { return m_sample_count;  }
 			const VkPipeline& pipeline(int i) const { return m_pipelines[i]; }
 			size_t num_tex2d() const { return m_num_tex2d; }
+			size_t num_tex3d() const { return m_num_tex3d; }
 			Sampler* sampler() const { return m_sampler; }
 			CommandBufferRecycler* recycler() const;
 
@@ -325,6 +328,7 @@ namespace VkInline
 			unsigned m_sample_count;
 			
 			size_t m_num_tex2d;
+			size_t m_num_tex3d;
 			Sampler* m_sampler;		
 
 			std::unordered_map<std::thread::id, CommandBufferRecycler*>* m_recyclers;
@@ -339,7 +343,7 @@ namespace VkInline
 
 			virtual void Recycle();
 			void draw(Texture2D** colorBufs, Texture2D* depthBuf, Texture2D** resolveBufs, float* clear_colors, float clear_depth,
-				void* param_data, Texture2D** tex2ds, unsigned* vertex_counts);
+				void* param_data, Texture2D** tex2ds, Texture3D** tex3ds, unsigned* vertex_counts);
 			
 		private:
 			const RenderPass* m_render_pass;

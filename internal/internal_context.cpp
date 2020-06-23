@@ -1014,7 +1014,7 @@ namespace VkInline
 			vkDestroySampler(ctx->device(), m_sampler, nullptr);
 		}
 
-		ComputePipeline::ComputePipeline(const std::vector<unsigned>& spv, size_t num_tex2d)
+		ComputePipeline::ComputePipeline(const std::vector<unsigned>& spv, size_t num_tex2d, size_t num_tex3d)
 		{
 			m_sampler = nullptr;
 			const Context* ctx = Context::get_context();
@@ -1042,7 +1042,22 @@ namespace VkInline
 					binding_tex2d.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 					binding_tex2d.descriptorCount = (unsigned)num_tex2d;
 					binding_tex2d.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-					descriptorSetLayoutBindings.push_back(binding_tex2d);
+					descriptorSetLayoutBindings.push_back(binding_tex2d);					
+				}
+
+				m_num_tex3d = num_tex3d;
+				if (num_tex3d > 0)
+				{
+					VkDescriptorSetLayoutBinding binding_tex3d = {};
+					binding_tex3d.binding = 2;
+					binding_tex3d.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+					binding_tex3d.descriptorCount = (unsigned)num_tex3d;
+					binding_tex3d.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+					descriptorSetLayoutBindings.push_back(binding_tex3d);
+				}
+
+				if (num_tex2d > 0 || num_tex3d > 0)
+				{
 					m_sampler = new Sampler;
 				}
 
@@ -1188,7 +1203,7 @@ namespace VkInline
 			m_pipeline->recycler()->RecycleCommandBuffer(this);
 		}
 
-		void ComputeCommandBuffer::dispatch(void* param_data, Texture2D** tex2ds, unsigned dim_x, unsigned dim_y, unsigned dim_z)
+		void ComputeCommandBuffer::dispatch(void* param_data, Texture2D** tex2ds, Texture3D** tex3ds, unsigned dim_x, unsigned dim_y, unsigned dim_z)
 		{
 			const Context* ctx = Context::get_context();
 			if (m_ubo != nullptr)
@@ -1203,7 +1218,14 @@ namespace VkInline
 				tex2dInfos[i].sampler = m_pipeline->sampler()->sampler();
 			}
 
-			
+			std::vector<VkDescriptorImageInfo> tex3dInfos(m_pipeline->num_tex3d());
+			for (size_t i = 0; i < m_pipeline->num_tex3d(); ++i)
+			{
+				tex3dInfos[i] = {};
+				tex3dInfos[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+				tex3dInfos[i].imageView = tex3ds[i]->view();
+				tex3dInfos[i].sampler = m_pipeline->sampler()->sampler();
+			}			
 
 			std::vector<VkWriteDescriptorSet> list_wds;
 			if (m_pipeline->num_tex2d() > 0)
@@ -1216,8 +1238,19 @@ namespace VkInline
 				wds.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 				wds.pImageInfo = tex2dInfos.data();
 				list_wds.push_back(wds);
-
 			}
+			if (m_pipeline->num_tex3d() > 0)
+			{
+				VkWriteDescriptorSet wds = {};
+				wds.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				wds.dstSet = m_descriptorSet;
+				wds.dstBinding = 2;
+				wds.descriptorCount = (uint32_t)m_pipeline->num_tex3d();
+				wds.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				wds.pImageInfo = tex3dInfos.data();
+				list_wds.push_back(wds);
+			}
+
 			vkUpdateDescriptorSets(ctx->device(), (unsigned)list_wds.size(), list_wds.data(), 0, nullptr);
 
 			if (m_ubo != nullptr)
@@ -1254,7 +1287,7 @@ namespace VkInline
 			const AttachmentInfo* depth_attachmentInfo,
 			const std::vector<AttachmentInfo>& resolve_attachmentInfo,
 			const std::vector<GraphicsPipelineInfo>& pipelineInfo,
-			size_t num_tex2d)
+			size_t num_tex2d, size_t num_tex3d)
 		{
 			m_num_color_attachments = color_attachmentInfo.size();
 			m_has_depth_attachment = depth_attachmentInfo != nullptr;
@@ -1282,6 +1315,21 @@ namespace VkInline
 					binding_tex2d.descriptorCount = (unsigned)num_tex2d;
 					binding_tex2d.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 					descriptorSetLayoutBindings.push_back(binding_tex2d);
+				}
+
+				m_num_tex3d = num_tex3d;
+				if (num_tex3d > 0)
+				{
+					VkDescriptorSetLayoutBinding binding_tex3d = {};
+					binding_tex3d.binding = 2;
+					binding_tex3d.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+					binding_tex3d.descriptorCount = (unsigned)num_tex3d;
+					binding_tex3d.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+					descriptorSetLayoutBindings.push_back(binding_tex3d);
+				}
+
+				if (num_tex2d >0 || num_tex3d > 0)
+				{
 					m_sampler = new Sampler;
 				}
 
@@ -1649,7 +1697,7 @@ namespace VkInline
 		}
 
 		void RenderPassCommandBuffer::draw(Texture2D** colorBufs, Texture2D* depthBuf, Texture2D** resolveBufs, float* clear_colors, float clear_depth,
-			void* param_data, Texture2D** tex2ds, unsigned* vertex_counts)
+			void* param_data, Texture2D** tex2ds, Texture3D** tex3ds, unsigned* vertex_counts)
 		{
 
 			const Context* ctx = Context::get_context();
@@ -1665,6 +1713,15 @@ namespace VkInline
 				tex2dInfos[i].sampler = m_render_pass->sampler()->sampler();
 			}
 
+			std::vector<VkDescriptorImageInfo> tex3dInfos(m_render_pass->num_tex3d());
+			for (size_t i = 0; i < m_render_pass->num_tex3d(); ++i)
+			{
+				tex3dInfos[i] = {};
+				tex3dInfos[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+				tex3dInfos[i].imageView = tex3ds[i]->view();
+				tex3dInfos[i].sampler = m_render_pass->sampler()->sampler();
+			}
+
 			std::vector<VkWriteDescriptorSet> list_wds;
 			if (m_render_pass->num_tex2d() > 0)
 			{
@@ -1676,8 +1733,19 @@ namespace VkInline
 				wds.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 				wds.pImageInfo = tex2dInfos.data();
 				list_wds.push_back(wds);
-
 			}
+			if (m_render_pass->num_tex3d() > 0)
+			{
+				VkWriteDescriptorSet wds = {};
+				wds.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				wds.dstSet = m_descriptorSet;
+				wds.dstBinding = 2;
+				wds.descriptorCount = (uint32_t)m_render_pass->num_tex3d();
+				wds.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				wds.pImageInfo = tex3dInfos.data();
+				list_wds.push_back(wds);
+			}
+
 			vkUpdateDescriptorSets(ctx->device(), (unsigned)list_wds.size(), list_wds.data(), 0, nullptr);
 
 			int width, height;

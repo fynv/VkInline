@@ -7,6 +7,7 @@ using namespace VkInline;
 typedef std::vector<std::string> StrArray;
 typedef std::vector<const ShaderViewable*> PtrArray;
 typedef std::vector<Texture2D*> Tex2DArray;
+typedef std::vector<Texture3D*> Tex3DArray;
 
 int n_vkinline_try_init()
 {
@@ -67,7 +68,7 @@ int n_computer_num_params(void* cptr)
 }
 
 
-int n_computer_launch(void* ptr_kernel, void* ptr_gridDim, void* ptr_blockDim, void* ptr_arg_list, void* ptr_tex2d_list)
+int n_computer_launch(void* ptr_kernel, void* ptr_gridDim, void* ptr_blockDim, void* ptr_arg_list, void* ptr_tex2d_list, void* ptr_tex3d_list)
 {
 	Computer* kernel = (Computer*)ptr_kernel;
 	size_t num_params = kernel->num_params();
@@ -77,6 +78,7 @@ int n_computer_launch(void* ptr_kernel, void* ptr_gridDim, void* ptr_blockDim, v
 
 	PtrArray* arg_list = (PtrArray*)ptr_arg_list;
 	Tex2DArray* tex2d_list = (Tex2DArray*)ptr_tex2d_list;
+	Tex3DArray* tex3d_list = (Tex3DArray*)ptr_tex3d_list;
 
 	size_t size = arg_list->size();
 	if (num_params != size)
@@ -85,7 +87,7 @@ int n_computer_launch(void* ptr_kernel, void* ptr_gridDim, void* ptr_blockDim, v
 		return -1;
 	}
 
-	if (kernel->launch(*gridDim, *blockDim, arg_list->data(), *tex2d_list))
+	if (kernel->launch(*gridDim, *blockDim, arg_list->data(), *tex2d_list, *tex3d_list))
 		return 0;
 	else
 		return -1;
@@ -181,7 +183,7 @@ void n_rasterizer_add_draw_call(void* cptr, void* draw_call)
 }
 
 int n_rasterizer_launch(void* cptr, void* ptr_colorBufs, void* _depthBuf, void* ptr_resolveBufs, 
-	float* clear_colors, float clear_depth,	void* ptr_arg_list, void* ptr_tex2d_list, unsigned* vertex_counts)
+	float* clear_colors, float clear_depth,	void* ptr_arg_list, void* ptr_tex2d_list, void* ptr_tex3d_list, unsigned* vertex_counts)
 {
 	Rasterizer* rasterizer = (Rasterizer*)cptr;
 	Tex2DArray* colorBufs = (Tex2DArray*)ptr_colorBufs;
@@ -189,8 +191,9 @@ int n_rasterizer_launch(void* cptr, void* ptr_colorBufs, void* _depthBuf, void* 
 	Tex2DArray* resolveBufs = (Tex2DArray*)ptr_resolveBufs;
 	PtrArray* arg_list = (PtrArray*)ptr_arg_list;
 	Tex2DArray* tex2d_list = (Tex2DArray*)ptr_tex2d_list;
+	Tex3DArray* tex3d_list = (Tex3DArray*)ptr_tex3d_list;
 
-	if (rasterizer->launch(*colorBufs, depthBuf, *resolveBufs, clear_colors, clear_depth, arg_list->data(), *tex2d_list, vertex_counts))
+	if (rasterizer->launch(*colorBufs, depthBuf, *resolveBufs, clear_colors, clear_depth, arg_list->data(), *tex2d_list, *tex3d_list, vertex_counts))
 		return 0;
 	else
 		return -1;

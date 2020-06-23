@@ -23,16 +23,16 @@ namespace VkInline
 		size_t size_of(const char* cls);
 		bool query_struct(const char* name_struct, size_t* member_offsets);
 		
-		bool launch_compute(dim_type gridDim, size_t num_params, const ShaderViewable** args, Texture2D* const * tex2ds, unsigned kid, const size_t* offsets);
-		bool launch_compute(dim_type gridDim, dim_type blockDim, const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const char* code_body);
-		bool launch_compute(dim_type gridDim, dim_type blockDim, const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const char* code_body, unsigned& kid, size_t* offsets);
+		bool launch_compute(dim_type gridDim, size_t num_params, const ShaderViewable** args, Texture2D* const * tex2ds, Texture3D* const * tex3ds, unsigned kid, const size_t* offsets);
+		bool launch_compute(dim_type gridDim, dim_type blockDim, const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, const char* code_body);
+		bool launch_compute(dim_type gridDim, dim_type blockDim, const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, const char* code_body, unsigned& kid, size_t* offsets);
 
 		bool launch_rasterization(Texture2D* const * colorBufs, Texture2D* depthBuf, Texture2D* const* resolveBufs, float* clear_colors, float clear_depth,
-			size_t num_params, const ShaderViewable** args, Texture2D* const* tex2ds, unsigned* vertex_counts, unsigned rpid, const size_t* offsets);
+			size_t num_params, const ShaderViewable** args, Texture2D* const* tex2ds, Texture3D* const* tex3ds, unsigned* vertex_counts, unsigned rpid, const size_t* offsets);
 		bool launch_rasterization(const std::vector<Attachement>& colorBufs, Attachement depthBuf, const std::vector<Attachement>& resolveBufs, float* clear_colors, float clear_depth,
-			const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const std::vector<const DrawCall*>& draw_calls, unsigned* vertex_counts);
+			const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, const std::vector<const DrawCall*>& draw_calls, unsigned* vertex_counts);
 		bool launch_rasterization(const std::vector<Attachement>& colorBufs, Attachement depthBuf, const std::vector<Attachement>& resolveBufs, float* clear_colors, float clear_depth,
-			const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const std::vector<const DrawCall*>& draw_calls, unsigned* vertex_counts, unsigned& rpid, size_t* offsets);
+			const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, const std::vector<const DrawCall*>& draw_calls, unsigned* vertex_counts, unsigned& rpid, size_t* offsets);
 
 		void add_built_in_header(const char* name, const char* content);
 		void add_code_block(const char* code);
@@ -44,10 +44,10 @@ namespace VkInline
 		Context();
 		~Context();
 
-		unsigned _build_compute_pipeline(dim_type blockDim, const std::vector<CapturedShaderViewable>& arg_map, size_t num_tex2d, const char* code_body);
+		unsigned _build_compute_pipeline(dim_type blockDim, const std::vector<CapturedShaderViewable>& arg_map, size_t num_tex2d, size_t num_tex3d, const char* code_body);
 		unsigned _build_render_pass(
 			const std::vector <Internal::AttachmentInfo>& color_attachmentInfo, const Internal::AttachmentInfo* depth_attachmentInfo, const std::vector <Internal::AttachmentInfo>& resolve_attachmentInfo,
-			const std::vector<CapturedShaderViewable>& arg_map, size_t num_tex2d, const std::vector<const DrawCall*>& draw_calls);
+			const std::vector<CapturedShaderViewable>& arg_map, size_t num_tex2d, size_t num_tex3d, const std::vector<const DrawCall*>& draw_calls);
 
 		bool m_verbose;
 		std::unordered_map<std::string, const char*> m_header_map;
@@ -314,7 +314,7 @@ namespace VkInline
 		m_kid = (unsigned)(-1);
 	}
 
-	bool Computer::launch(dim_type gridDim, dim_type blockDim, const ShaderViewable** args, const std::vector<Texture2D*>& tex2ds)
+	bool Computer::launch(dim_type gridDim, dim_type blockDim, const ShaderViewable** args, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds)
 	{
 		Context& ctx = Context::get_context();
 		if (!m_type_locked)
@@ -325,7 +325,7 @@ namespace VkInline
 				arg_map[i].obj_name = m_param_names[i].c_str();
 				arg_map[i].obj = args[i];
 			}
-			return ctx.launch_compute(gridDim, blockDim, arg_map, tex2ds, m_code_body.c_str());
+			return ctx.launch_compute(gridDim, blockDim, arg_map, tex2ds, tex3ds, m_code_body.c_str());
 		}
 		else
 		{
@@ -339,12 +339,12 @@ namespace VkInline
 					arg_map[i].obj = args[i];
 				}
 				m_offsets.resize(m_param_names.size() + 1);
-				return ctx.launch_compute(gridDim, blockDim, arg_map, tex2ds, m_code_body.c_str(), m_kid, m_offsets.data());
+				return ctx.launch_compute(gridDim, blockDim, arg_map, tex2ds, tex3ds, m_code_body.c_str(), m_kid, m_offsets.data());
 			}
 			else
 			{
 				locker.unlock();
-				return ctx.launch_compute(gridDim, m_param_names.size(), args, tex2ds.data(), m_kid, m_offsets.data());
+				return ctx.launch_compute(gridDim, m_param_names.size(), args, tex2ds.data(), tex3ds.data(), m_kid, m_offsets.data());
 			}
 		}
 	}
@@ -403,7 +403,7 @@ namespace VkInline
 	}
 
 	bool Rasterizer::launch(const std::vector<Texture2D*>&  colorBufs, Texture2D* depthBuf, const std::vector<Texture2D*>& resolveBufs, float* clear_colors, float clear_depth,
-		const ShaderViewable** args, const std::vector<Texture2D*>& tex2ds, unsigned* vertex_counts)
+		const ShaderViewable** args, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, unsigned* vertex_counts)
 	{
 		Context& ctx = Context::get_context();
 		if (!m_type_locked)
@@ -431,7 +431,7 @@ namespace VkInline
 				arg_map[i].obj = args[i];
 			}
 
-			return ctx.launch_rasterization(color_att, depth_att, resolve_att, clear_colors, clear_depth, arg_map, tex2ds, m_draw_calls, vertex_counts);
+			return ctx.launch_rasterization(color_att, depth_att, resolve_att, clear_colors, clear_depth, arg_map, tex2ds, tex3ds, m_draw_calls, vertex_counts);
 		}
 		else
 		{
@@ -461,12 +461,12 @@ namespace VkInline
 					arg_map[i].obj = args[i];
 				}
 				m_offsets.resize(m_param_names.size() + 1);
-				return ctx.launch_rasterization(color_att, depth_att, resolve_att, clear_colors, clear_depth, arg_map, tex2ds, m_draw_calls, vertex_counts, m_rpid, m_offsets.data());
+				return ctx.launch_rasterization(color_att, depth_att, resolve_att, clear_colors, clear_depth, arg_map, tex2ds, tex3ds, m_draw_calls, vertex_counts, m_rpid, m_offsets.data());
 			}
 			else
 			{
 				locker.unlock();
-				return ctx.launch_rasterization(colorBufs.data(), depthBuf, resolveBufs.data(), clear_colors, clear_depth, m_param_names.size(), args, tex2ds.data(), vertex_counts, m_rpid, m_offsets.data());
+				return ctx.launch_rasterization(colorBufs.data(), depthBuf, resolveBufs.data(), clear_colors, clear_depth, m_param_names.size(), args, tex2ds.data(), tex3ds.data(), vertex_counts, m_rpid, m_offsets.data());
 			}
 		}
 	
