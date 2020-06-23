@@ -64,6 +64,7 @@ set(PYTHON
 	VkInline/SVVector.py
 	VkInline/SVObjVector.py
 	VkInline/Texture2D.py
+	VkInline/Texture3D.py
 )
 
 install(FILES ${PYTHON} DESTINATION test_python/VkInline)
