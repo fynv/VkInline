@@ -599,19 +599,6 @@ namespace VkInline
 		for (size_t i = 0; i< resolve_attachmentInfo.size(); i++)
 			sig.push_feature(&resolve_attachmentInfo[i], sizeof(Internal::AttachmentInfo));
 
-		struct PipelineFeature
-		{
-			unsigned long long hash_vert;
-			unsigned long long hash_frag;
-			bool depth_enable;
-			bool depth_write;
-			bool color_write;
-			bool alpha_write;
-			bool alpha_blend;
-			unsigned compare_op;
-		};
-
-
 		if (m_verbose)
 		{
 			std::shared_lock<std::shared_mutex> lock(m_mutex_dynamic_code);
@@ -675,11 +662,11 @@ namespace VkInline
 			hash_vert[i] = s_get_hash(code_vert[i].c_str());
 			hash_frag[i] = s_get_hash(code_frag[i].c_str());
 
-			PipelineFeature pipe_feature;
-			pipe_feature.hash_vert = hash_vert[i];
-			pipe_feature.hash_frag = hash_frag[i];
-			draw_calls[i]->get_states(&pipe_feature.depth_enable);
-			sig.push_feature(&pipe_feature, sizeof(PipelineFeature));
+			sig.push_feature(&hash_vert[i], sizeof(unsigned long long));
+			sig.push_feature(&hash_frag[i], sizeof(unsigned long long));
+			std::vector<unsigned char> buf_pipe_states(draw_calls[i]->size_states());
+			draw_calls[i]->get_states(buf_pipe_states.data());
+			sig.push_feature(buf_pipe_states.data(), buf_pipe_states.size());
 		}
 
 		unsigned long long hash_render_pass = sig.get_hash();
