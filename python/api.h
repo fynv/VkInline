@@ -153,15 +153,26 @@ extern "C"
 	// Texture2D
 	PY_VkInline_API void* n_texture2d_create(int width, int height, unsigned vkformat, unsigned isDepth, unsigned isStencil, unsigned sampleCount);
 	PY_VkInline_API void n_texture2d_release(void* tex2d);
-	PY_VkInline_API int n_texture2d_width(void* _tex2d);
-	PY_VkInline_API int n_texture2d_height(void* _tex2d);
-	PY_VkInline_API unsigned n_texture2d_pixelsize(void* _tex2d);
-	PY_VkInline_API unsigned n_texture2d_channelcount(void* _tex2d);
-	PY_VkInline_API unsigned n_texture2d_samplecount(void* _tex2d);
-	PY_VkInline_API unsigned n_texture2d_vkformat(void* _tex2d);
-	PY_VkInline_API void n_texture2d_upload(void* _tex2d, void* hdata);
-	PY_VkInline_API void n_texture2d_download(void* _tex2d, void* hdata);
+	PY_VkInline_API int n_texture2d_width(void* tex2d);
+	PY_VkInline_API int n_texture2d_height(void* tex2d);
+	PY_VkInline_API unsigned n_texture2d_pixelsize(void* tex2d);
+	PY_VkInline_API unsigned n_texture2d_channelcount(void* tex2d);
+	PY_VkInline_API unsigned n_texture2d_samplecount(void* tex2d);
+	PY_VkInline_API unsigned n_texture2d_vkformat(void* tex2d);
+	PY_VkInline_API void n_texture2d_upload(void* tex2d, void* hdata);
+	PY_VkInline_API void n_texture2d_download(void* tex2d, void* hdata);
 
+	// Texture3D
+	PY_VkInline_API void* n_texture3d_create(int dimX, int dimY, int dimZ, unsigned vkformat);
+	PY_VkInline_API void n_texture3d_release(void* tex3d);
+	PY_VkInline_API int n_texture3d_dimX(void* tex3d);
+	PY_VkInline_API int n_texture3d_dimY(void* tex3d);
+	PY_VkInline_API int n_texture3d_dimZ(void* tex3d);
+	PY_VkInline_API unsigned n_texture3d_pixelsize(void* tex3d);
+	PY_VkInline_API unsigned n_texture3d_channelcount(void* tex3d);
+	PY_VkInline_API unsigned n_texture3d_vkformat(void* tex3d);
+	PY_VkInline_API void n_texture3d_upload(void* tex3d, void* hdata);
+	PY_VkInline_API void n_texture3d_download(void* tex3d, void* hdata);
 
 }
 

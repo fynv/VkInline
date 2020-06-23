@@ -186,6 +186,33 @@ namespace VkInline
 			VkImageView m_view;
 		};
 
+		class Texture3D
+		{
+		public:
+			int dimX() const { return m_dims[0]; }
+			int dimY() const { return m_dims[1]; }
+			int dimZ() const { return m_dims[2]; }
+			unsigned pixel_size() const;
+			unsigned channel_count() const;
+			const VkFormat& format() const { return m_format; }
+			const VkImage& image() const { return m_image; }
+			const VkDeviceMemory& memory() const { return m_mem; }
+			const VkImageView& view() const { return m_view; }
+
+			Texture3D(int dimX, int dimY, int dimZ, VkFormat format);
+			~Texture3D();
+
+			void upload(const void* hdata);
+			void download(void* hdata) const;
+
+		private:
+			int m_dims[3];
+			VkFormat m_format;
+			VkImage m_image;
+			VkDeviceMemory m_mem;
+			VkImageView m_view;
+		};
+
 		class Sampler
 		{
 		public:

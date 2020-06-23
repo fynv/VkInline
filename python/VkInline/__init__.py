@@ -7,4 +7,5 @@ from .ShaderViewable import *
 from .SVVector import *
 from .SVObjVector import *
 from .Texture2D import *
+from .Texture3D import *
 

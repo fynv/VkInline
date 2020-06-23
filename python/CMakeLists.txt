@@ -16,6 +16,7 @@ api_SVBuffer.cpp
 api_SVCombine.cpp
 api_SVObjBuffer.cpp
 api_Texture2D.cpp
+api_Texture3D.cpp
 )
 
 set (INCLUDE_DIR 

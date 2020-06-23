@@ -12,6 +12,7 @@ namespace VkInline
 	namespace Internal
 	{
 		class Texture2D;
+		class Texture3D;
 		class CommandBufferRecycler;
 	}
 
@@ -57,6 +58,31 @@ namespace VkInline
 
 	private:
 		Internal::Texture2D* m_tex;
+	};
+
+	class Texture3D
+	{
+	public:
+		int dimX() const;
+		int dimY() const;
+		int dimZ() const;
+		unsigned pixel_size() const;
+		unsigned channel_count() const;
+		unsigned vkformat() const;
+
+		Internal::Texture3D* internal() { return m_tex; }
+		const Internal::Texture3D* internal() const { return m_tex; }
+
+		Texture3D(int dimX, int dimY, int dimZ, unsigned vkformat);
+		~Texture3D();
+
+		void upload(const void* hdata);
+		void download(void* hdata) const;
+
+		void apply_barrier(const Internal::CommandBuffer& cmdbuf, unsigned dstFlags) const;
+
+	private:
+		Internal::Texture3D* m_tex;
 	};
 
 	class Computer
