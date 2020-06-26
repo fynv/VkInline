@@ -173,13 +173,16 @@ namespace VkInline
 
 			void upload(const void* hdata);
 			void download(void* hdata) const;
+			void change_layout(CommandBuffer const *buf, VkImageLayout new_layout) const;
 
+			VkImageLayout get_layout() {return m_layout;}
 
 		private:
 			int m_width;
 			int m_height;
 			VkFormat m_format;
 			VkImageAspectFlags m_aspect;
+			mutable VkImageLayout m_layout;
 			VkSampleCountFlagBits m_sampleCount;
 			VkImage m_image;
 			VkDeviceMemory m_mem;

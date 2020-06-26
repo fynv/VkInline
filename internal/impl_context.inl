@@ -484,7 +484,7 @@ namespace VkInline
 		std::vector<Internal::Texture2D*> i_tex2ds(pipeline->num_tex2d());
 		for (size_t i = 0; i < pipeline->num_tex2d(); i++)
 		{
-			tex2ds[i]->apply_barrier_as_texture(*cmdBuf, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+			tex2ds[i]->internal()->change_layout(cmdBuf, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 			i_tex2ds[i] = tex2ds[i]->internal();
 		}
 
@@ -821,10 +821,6 @@ namespace VkInline
 			renderpass = m_cache_render_passes[rpid];
 		}
 
-		std::vector <Internal::Texture2D*> tex_colorBufs(renderpass->num_color_attachments());
-		for (size_t i = 0; i < renderpass->num_color_attachments(); i++)
-			tex_colorBufs[i] = colorBufs[i]->internal();
-
 		Internal::Texture2D* tex_depthBuf = nullptr;
 		if (renderpass->has_depth_attachment())
 			tex_depthBuf = depthBuf->internal();		
@@ -852,10 +848,17 @@ namespace VkInline
 			args[i]->apply_barriers(*cmdBuf, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
 		}
 
+		std::vector <Internal::Texture2D *> tex_colorBufs(renderpass->num_color_attachments());
+		for (size_t i = 0; i < renderpass->num_color_attachments(); i++)
+		{
+			colorBufs[i]->internal()->change_layout(cmdBuf, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+			tex_colorBufs[i] = colorBufs[i]->internal();
+		}
+
 		std::vector<Internal::Texture2D*> i_tex2ds(renderpass->num_tex2d());
 		for (size_t i = 0; i < i_tex2ds.size(); i++)
 		{
-			tex2ds[i]->apply_barrier_as_texture(*cmdBuf, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+			tex2ds[i]->internal()->change_layout(cmdBuf, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 			i_tex2ds[i] = tex2ds[i]->internal();
 		}
 

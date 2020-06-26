@@ -617,6 +617,8 @@ namespace VkInline
 			imageInfo.samples = sampleCount;
 			imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
+			m_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+
 			vkCreateImage(ctx->device(), &imageInfo, nullptr, &m_image);
 
 			VkMemoryRequirements memRequirements;
@@ -670,14 +672,14 @@ namespace VkInline
 		class CommandBuf_TexUpload : public AutoCommandBuffer
 		{
 		public:
-			CommandBuf_TexUpload(int width, int height, unsigned pixel_size, unsigned samples, VkImage image, VkImageAspectFlags aspectFlags, const void* hdata)
+			CommandBuf_TexUpload(int width, int height, unsigned pixel_size, unsigned samples, VkImage image, VkImageLayout &layout, VkImageAspectFlags aspectFlags, const void* hdata)
 				: m_staging_buf(width*height*pixel_size*samples)
 			{
 				m_staging_buf.upload(hdata);
 
 				VkImageMemoryBarrier barrier = {};
 				barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-				barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+				barrier.oldLayout = layout;
 				barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 				barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 				barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -689,6 +691,7 @@ namespace VkInline
 				barrier.subresourceRange.layerCount = 1;
 				barrier.srcAccessMask = 0;
 				barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+				layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 
 				vkCmdPipelineBarrier(
 					m_buf,
@@ -725,7 +728,7 @@ namespace VkInline
 
 		void Texture2D::upload(const void* hdata)
 		{
-			auto cmdBuf = new CommandBuf_TexUpload(m_width, m_height, pixel_size(), m_sampleCount, m_image, m_aspect, hdata);
+			auto cmdBuf = new CommandBuf_TexUpload(m_width, m_height, pixel_size(), m_sampleCount, m_image, m_layout, m_aspect, hdata);
 			const Context* ctx = Context::get_context();
 			ctx->SubmitCommandBuffer(cmdBuf);
 		}
@@ -737,31 +740,8 @@ namespace VkInline
 
 			auto cmdBuf = new AutoCommandBuffer;
 
-			VkImageMemoryBarrier barrier = {};
-			barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-			barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barrier.image = m_image;
-			barrier.subresourceRange.aspectMask = m_aspect;
-			barrier.subresourceRange.baseMipLevel = 0;
-			barrier.subresourceRange.levelCount = 1;
-			barrier.subresourceRange.baseArrayLayer = 0;
-			barrier.subresourceRange.layerCount = 1;
-			barrier.srcAccessMask = 0;
-			barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-
-			vkCmdPipelineBarrier(
-				cmdBuf->buf(),
-				VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-				VK_PIPELINE_STAGE_TRANSFER_BIT,
-				0,
-				0, nullptr,
-				0, nullptr,
-				1, &barrier
-			);
-
+			change_layout((CommandBuffer*)cmdBuf, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+			
 			VkBufferImageCopy region = {};
 			region.imageSubresource.aspectMask = m_aspect;
 			region.imageSubresource.layerCount = 1;
@@ -784,6 +764,34 @@ namespace VkInline
 			ctx->SubmitCommandBuffer(cmdBuf);
 			ctx->Wait();
 			staging_buf.download(hdata);
+		}
+
+		void Texture2D::change_layout(CommandBuffer const *buf, VkImageLayout new_layout) const {
+			VkImageMemoryBarrier barrier = {};
+			barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+			barrier.oldLayout = m_layout;
+			barrier.newLayout = new_layout;
+			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.image = m_image;
+			barrier.subresourceRange.aspectMask = m_aspect;
+			barrier.subresourceRange.baseMipLevel = 0;
+			barrier.subresourceRange.levelCount = 1;
+			barrier.subresourceRange.baseArrayLayer = 0;
+			barrier.subresourceRange.layerCount = 1;
+			barrier.srcAccessMask = 0;
+			barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+			vkCmdPipelineBarrier(
+				buf->buf(),
+				VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+				VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+				0,
+				0, nullptr,
+				0, nullptr,
+				1, &barrier
+			);
+			m_layout = new_layout;
 		}
 
 		unsigned Texture3D::pixel_size() const
