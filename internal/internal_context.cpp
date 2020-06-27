@@ -175,26 +175,19 @@ namespace VkInline
 		{
 			m_is_valid = _init_vulkan();
 			if (!m_is_valid) return;
-			m_mu_queue = new std::mutex;
-			m_streams = new std::unordered_map<std::thread::id, Stream*>;
-			m_mu_streams = new std::shared_mutex;
 		}
 
 		Context::~Context()
 		{
 			if (!m_is_valid) return;
 
-			auto iter = m_streams->begin();
-			while (iter != m_streams->end())
+			auto iter = m_streams.begin();
+			while (iter != m_streams.end())
 			{
 				vkDestroyCommandPool(m_device, iter->second->m_commandPool, nullptr);
 				delete iter->second;
 				iter++;
 			}
-
-			delete m_mu_streams;
-			delete m_streams;
-			delete m_mu_queue;
 
 #ifdef _DEBUG
 			vkDestroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);
@@ -206,14 +199,14 @@ namespace VkInline
 		Context::Stream* Context::_stream(std::thread::id threadId) const
 		{
 			{
-				std::shared_lock<std::shared_mutex> locker(*m_mu_streams);
-				auto iter = m_streams->find(threadId);
-				if (iter != m_streams->end()) return iter->second;
+				std::shared_lock<std::shared_mutex> locker(m_mu_streams);
+				auto iter = m_streams.find(threadId);
+				if (iter != m_streams.end()) return iter->second;
 			}
 			Context::Stream* stream = new Context::Stream;
 			{
-				std::unique_lock<std::shared_mutex> locker(*m_mu_streams);
-				(*m_streams)[threadId] = stream;
+				std::unique_lock<std::shared_mutex> locker(m_mu_streams);
+				m_streams[threadId] = stream;
 			}
 
 			VkCommandPoolCreateInfo poolInfo = {};
@@ -284,7 +277,7 @@ namespace VkInline
 			submitInfo.pCommandBuffers = &cmdBuf->buf();
 
 			{
-				std::unique_lock<std::mutex> locker(*m_mu_queue);
+				std::unique_lock<std::mutex> locker(m_mu_queue);
 				for (size_t i = 0; i < n; i++)
 				{
 					VkFence f = 0;
@@ -1046,22 +1039,17 @@ namespace VkInline
 
 				vkCreateComputePipelines(ctx->device(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_pipeline);
 			}
-			m_recyclers = new std::unordered_map<std::thread::id, CommandBufferRecycler*>;
-			m_mu_streams = new std::shared_mutex;
-
 			vkDestroyShaderModule(ctx->device(), shader_module, nullptr);
 		}
 
 		ComputePipeline::~ComputePipeline()
 		{
-			auto iter = m_recyclers->begin();
-			while (iter != m_recyclers->end())
+			auto iter = m_recyclers.begin();
+			while (iter != m_recyclers.end())
 			{
 				delete iter->second;
 				iter++;
 			}
-			delete m_mu_streams;
-			delete m_recyclers;
 			const Context* ctx = Context::get_context();			
 			vkDestroyPipeline(ctx->device(), m_pipeline, nullptr);
 			vkDestroyPipelineLayout(ctx->device(), m_pipelineLayout, nullptr);
@@ -1073,9 +1061,9 @@ namespace VkInline
 		{
 			std::thread::id threadId = std::this_thread::get_id();
 			{
-				std::shared_lock<std::shared_mutex> locker(*m_mu_streams);
-				auto iter = m_recyclers->find(threadId);
-				if (iter != m_recyclers->end())
+				std::shared_lock<std::shared_mutex> locker(m_mu_streams);
+				auto iter = m_recyclers.find(threadId);
+				if (iter != m_recyclers.end())
 				{
 					CommandBufferRecycler* ret = iter->second;
 					return ret;
@@ -1085,8 +1073,8 @@ namespace VkInline
 			CommandBufferRecycler* ret = new CommandBufferRecycler;
 
 			{
-				std::unique_lock<std::shared_mutex> locker(*m_mu_streams);
-				(*m_recyclers)[threadId] = ret;
+				std::unique_lock<std::shared_mutex> locker(m_mu_streams);
+				m_recyclers[threadId] = ret;
 			}
 
 			return ret;
@@ -1506,22 +1494,16 @@ namespace VkInline
 					vkDestroyShaderModule(ctx->device(), vert_mods[i], nullptr);
 				}
 			}
-
-
-			m_recyclers = new std::unordered_map<std::thread::id, CommandBufferRecycler*>;
-			m_mu_streams = new std::shared_mutex;
 		}
 
 		RenderPass::~RenderPass()
 		{
-			auto iter = m_recyclers->begin();
-			while (iter != m_recyclers->end())
+			auto iter = m_recyclers.begin();
+			while (iter != m_recyclers.end())
 			{
 				delete iter->second;
 				iter++;
 			}
-			delete m_mu_streams;
-			delete m_recyclers;
 			const Context* ctx = Context::get_context();
 
 			for (size_t i = 0; i < m_pipelines.size(); i++)
@@ -1540,9 +1522,9 @@ namespace VkInline
 		{
 			std::thread::id threadId = std::this_thread::get_id();
 			{
-				std::shared_lock<std::shared_mutex> locker(*m_mu_streams);
-				auto iter = m_recyclers->find(threadId);
-				if (iter != m_recyclers->end())
+				std::shared_lock<std::shared_mutex> locker(m_mu_streams);
+				auto iter = m_recyclers.find(threadId);
+				if (iter != m_recyclers.end())
 				{
 					CommandBufferRecycler* ret = iter->second;
 					return ret;
@@ -1552,8 +1534,8 @@ namespace VkInline
 			CommandBufferRecycler* ret = new CommandBufferRecycler;
 
 			{
-				std::unique_lock<std::shared_mutex> locker(*m_mu_streams);
-				(*m_recyclers)[threadId] = ret;
+				std::unique_lock<std::shared_mutex> locker(m_mu_streams);
+				m_recyclers[threadId] = ret;
 			}
 
 			return ret;

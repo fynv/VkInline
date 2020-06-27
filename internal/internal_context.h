@@ -48,10 +48,10 @@ namespace VkInline
 			VkDevice m_device;
 
 			VkQueue m_queue;
-			std::mutex* m_mu_queue;
+			mutable std::mutex m_mu_queue;
 
-			std::unordered_map<std::thread::id, Stream*>* m_streams;
-			std::shared_mutex* m_mu_streams;
+			mutable std::unordered_map<std::thread::id, Stream*> m_streams;
+			mutable std::shared_mutex m_mu_streams;
 
 			Stream* _stream(std::thread::id threadId) const;
 
@@ -264,8 +264,8 @@ namespace VkInline
 			size_t m_num_tex3d;
 			Sampler* m_sampler;
 
-			std::unordered_map<std::thread::id, CommandBufferRecycler*>* m_recyclers;
-			std::shared_mutex* m_mu_streams;
+			mutable std::unordered_map<std::thread::id, CommandBufferRecycler*> m_recyclers;
+			mutable std::shared_mutex m_mu_streams;
 
 		};
 
@@ -346,8 +346,8 @@ namespace VkInline
 			size_t m_num_tex3d;
 			Sampler* m_sampler;		
 
-			std::unordered_map<std::thread::id, CommandBufferRecycler*>* m_recyclers;
-			std::shared_mutex* m_mu_streams;
+			mutable std::unordered_map<std::thread::id, CommandBufferRecycler*> m_recyclers;
+			mutable std::shared_mutex m_mu_streams;
 		};
 
 		class RenderPassCommandBuffer : public CommandBuffer
