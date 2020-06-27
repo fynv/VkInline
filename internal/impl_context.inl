@@ -820,30 +820,39 @@ namespace VkInline
 			renderpass = m_cache_render_passes[rpid];
 		}
 
+		Internal::CommandBufferRecycler* recycler = renderpass->recycler();
+		Internal::RenderPassCommandBuffer* cmdBuf = (Internal::RenderPassCommandBuffer*)recycler->RetriveCommandBuffer();
+		if (cmdBuf == nullptr)
+		{
+			cmdBuf = new Internal::RenderPassCommandBuffer(renderpass, offsets[num_params]);
+		}
+
 		std::vector <Internal::Texture2D*> tex_colorBufs(renderpass->num_color_attachments());
 		for (size_t i = 0; i < renderpass->num_color_attachments(); i++)
+		{
+			colorBufs[i]->apply_barrier_as_attachment(*cmdBuf);
 			tex_colorBufs[i] = colorBufs[i]->internal();
+		}
 
 		Internal::Texture2D* tex_depthBuf = nullptr;
 		if (renderpass->has_depth_attachment())
-			tex_depthBuf = depthBuf->internal();		
+		{
+			depthBuf->apply_barrier_as_attachment(*cmdBuf);
+			tex_depthBuf = depthBuf->internal();
+		}
 
 		std::vector <Internal::Texture2D*> tex_resolveBufs(renderpass->num_resolve_attachments());
 		for (size_t i = 0; i < renderpass->num_resolve_attachments(); i++)
+		{
+			resolveBufs[i]->apply_barrier_as_attachment(*cmdBuf);
 			tex_resolveBufs[i] = resolveBufs[i]->internal();
+		}
 
 		ViewBuf h_uniform(offsets[num_params]);
 		for (size_t i = 0; i < num_params; i++)
 		{
 			ViewBuf vb = args[i]->view();
 			memcpy(h_uniform.data() + offsets[i], vb.data(), vb.size());
-		}
-
-		Internal::CommandBufferRecycler* recycler = renderpass->recycler();
-		Internal::RenderPassCommandBuffer* cmdBuf = (Internal::RenderPassCommandBuffer*)recycler->RetriveCommandBuffer();
-		if (cmdBuf == nullptr)
-		{
-			cmdBuf = new Internal::RenderPassCommandBuffer(renderpass, offsets[num_params]);
 		}
 
 		for (size_t i = 0; i < num_params; i++)

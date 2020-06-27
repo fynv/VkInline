@@ -226,6 +226,37 @@ namespace VkInline
 
 	}
 
+	void Texture2D::apply_barrier_as_attachment(const Internal::CommandBuffer& cmdbuf)
+	{
+		VkImageMemoryBarrier barriers[1];
+		barriers[0] = {};
+		barriers[0].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		barriers[0].oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		barriers[0].newLayout = (m_tex->aspect()&(VK_IMAGE_ASPECT_DEPTH_BIT|VK_IMAGE_ASPECT_STENCIL_BIT))==0? 
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL: VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barriers[0].image = m_tex->image();
+		barriers[0].subresourceRange.aspectMask = m_tex->aspect();
+		barriers[0].subresourceRange.baseMipLevel = 0;
+		barriers[0].subresourceRange.levelCount = 1;
+		barriers[0].subresourceRange.baseArrayLayer = 0;
+		barriers[0].subresourceRange.layerCount = 1;
+		barriers[0].srcAccessMask = 0;
+		barriers[0].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+		vkCmdPipelineBarrier(
+			cmdbuf.buf(),
+			VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+			VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+			0,
+			0, nullptr,
+			0, nullptr,
+			1, barriers
+		);
+	}
+
 	int Texture3D::dimX() const
 	{
 		return m_tex->dimX();
