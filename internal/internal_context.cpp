@@ -658,21 +658,20 @@ namespace VkInline
 
 		void Texture2D::apply_barrier(const CommandBuffer& cmdbuf, VkImageLayout newLayout, VkAccessFlags dstAccessMask, VkPipelineStageFlags dstStageMask) const
 		{
-			VkImageMemoryBarrier barriers[1];
-			barriers[0] = {};
-			barriers[0].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-			barriers[0].oldLayout = m_cur_layout;
-			barriers[0].newLayout = newLayout;
-			barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barriers[0].image = m_image;
-			barriers[0].subresourceRange.aspectMask = m_aspect;
-			barriers[0].subresourceRange.baseMipLevel = 0;
-			barriers[0].subresourceRange.levelCount = 1;
-			barriers[0].subresourceRange.baseArrayLayer = 0;
-			barriers[0].subresourceRange.layerCount = 1;
-			barriers[0].srcAccessMask = m_cur_access_mask;
-			barriers[0].dstAccessMask = dstAccessMask;
+			VkImageMemoryBarrier barrier = {};
+			barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+			barrier.oldLayout = m_cur_layout;
+			barrier.newLayout = newLayout;
+			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.image = m_image;
+			barrier.subresourceRange.aspectMask = m_aspect;
+			barrier.subresourceRange.baseMipLevel = 0;
+			barrier.subresourceRange.levelCount = 1;
+			barrier.subresourceRange.baseArrayLayer = 0;
+			barrier.subresourceRange.layerCount = 1;
+			barrier.srcAccessMask = m_cur_access_mask;
+			barrier.dstAccessMask = dstAccessMask;
 
 			vkCmdPipelineBarrier(
 				cmdbuf.buf(),
@@ -681,7 +680,7 @@ namespace VkInline
 				0,
 				0, nullptr,
 				0, nullptr,
-				1, barriers
+				1, &barrier
 			);
 
 			m_cur_layout = newLayout;
@@ -846,21 +845,20 @@ namespace VkInline
 
 		void Texture3D::apply_barrier(const CommandBuffer& cmdbuf, VkImageLayout newLayout, VkAccessFlags dstAccessMask, VkPipelineStageFlags dstStageMask) const
 		{
-			VkImageMemoryBarrier barriers[1];
-			barriers[0] = {};
-			barriers[0].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-			barriers[0].oldLayout = m_cur_layout;
-			barriers[0].newLayout = newLayout;
-			barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barriers[0].image = m_image;
-			barriers[0].subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			barriers[0].subresourceRange.baseMipLevel = 0;
-			barriers[0].subresourceRange.levelCount = 1;
-			barriers[0].subresourceRange.baseArrayLayer = 0;
-			barriers[0].subresourceRange.layerCount = 1;
-			barriers[0].srcAccessMask = m_cur_access_mask;
-			barriers[0].dstAccessMask = dstAccessMask;
+			VkImageMemoryBarrier barrier = {};
+			barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+			barrier.oldLayout = m_cur_layout;
+			barrier.newLayout = newLayout;
+			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.image = m_image;
+			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			barrier.subresourceRange.baseMipLevel = 0;
+			barrier.subresourceRange.levelCount = 1;
+			barrier.subresourceRange.baseArrayLayer = 0;
+			barrier.subresourceRange.layerCount = 1;
+			barrier.srcAccessMask = m_cur_access_mask;
+			barrier.dstAccessMask = dstAccessMask;
 
 			vkCmdPipelineBarrier(
 				cmdbuf.buf(),
@@ -869,7 +867,7 @@ namespace VkInline
 				0,
 				0, nullptr,
 				0, nullptr,
-				1, barriers
+				1, &barrier
 			);
 
 			m_cur_layout = newLayout;
