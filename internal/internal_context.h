@@ -113,10 +113,14 @@ namespace VkInline
 
 			VkDeviceAddress get_device_address() const;
 
+			void apply_barrier(const CommandBuffer& cmdbuf, VkAccessFlags dstAccessMask, VkPipelineStageFlags dstStageMask) const;
+
 		protected:
 			VkDeviceSize m_size;
 			VkBuffer m_buf;
 			VkDeviceMemory m_mem;
+
+			mutable VkAccessFlags m_cur_access_mask;
 
 			Buffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags flags);
 			virtual ~Buffer();
@@ -171,6 +175,8 @@ namespace VkInline
 			Texture2D(int width, int height, VkFormat format, VkImageAspectFlags aspectFlags, VkImageUsageFlags usage, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT);
 			~Texture2D();
 
+			void apply_barrier(const CommandBuffer& cmdbuf, VkImageLayout newLayout, VkAccessFlags dstAccessMask, VkPipelineStageFlags dstStageMask) const;
+
 			void upload(const void* hdata);
 			void download(void* hdata) const;
 
@@ -184,6 +190,10 @@ namespace VkInline
 			VkImage m_image;
 			VkDeviceMemory m_mem;
 			VkImageView m_view;
+
+			mutable VkImageLayout m_cur_layout;
+			mutable VkAccessFlags m_cur_access_mask;
+			
 		};
 
 		class Texture3D
@@ -202,6 +212,8 @@ namespace VkInline
 			Texture3D(int dimX, int dimY, int dimZ, VkFormat format);
 			~Texture3D();
 
+			void apply_barrier(const CommandBuffer& cmdbuf, VkImageLayout newLayout, VkAccessFlags dstAccessMask, VkPipelineStageFlags dstStageMask) const;
+
 			void upload(const void* hdata);
 			void download(void* hdata) const;
 
@@ -211,6 +223,9 @@ namespace VkInline
 			VkImage m_image;
 			VkDeviceMemory m_mem;
 			VkImageView m_view;
+
+			mutable VkImageLayout m_cur_layout;
+			mutable VkAccessFlags m_cur_access_mask;
 		};
 
 		class Sampler

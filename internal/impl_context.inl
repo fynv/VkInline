@@ -512,17 +512,11 @@ namespace VkInline
 
 		std::vector<Internal::Texture2D*> i_tex2ds(pipeline->num_tex2d());
 		for (size_t i = 0; i < pipeline->num_tex2d(); i++)
-		{
-			tex2ds[i]->apply_barrier_as_texture(*cmdBuf, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 			i_tex2ds[i] = tex2ds[i]->internal();
-		}
 
 		std::vector<Internal::Texture3D*> i_tex3ds(pipeline->num_tex3d());
 		for (size_t i = 0; i < pipeline->num_tex3d(); i++)
-		{
-			tex3ds[i]->apply_barrier(*cmdBuf, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 			i_tex3ds[i] = tex3ds[i]->internal();
-		}
 
 		cmdBuf->dispatch(h_uniform.data(), i_tex2ds.data(), i_tex3ds.data(), gridDim.x, gridDim.y, gridDim.z);
 
@@ -829,24 +823,15 @@ namespace VkInline
 
 		std::vector <Internal::Texture2D*> tex_colorBufs(renderpass->num_color_attachments());
 		for (size_t i = 0; i < renderpass->num_color_attachments(); i++)
-		{
-			colorBufs[i]->apply_barrier_as_attachment(*cmdBuf);
 			tex_colorBufs[i] = colorBufs[i]->internal();
-		}
 
 		Internal::Texture2D* tex_depthBuf = nullptr;
 		if (renderpass->has_depth_attachment())
-		{
-			depthBuf->apply_barrier_as_attachment(*cmdBuf);
 			tex_depthBuf = depthBuf->internal();
-		}
 
 		std::vector <Internal::Texture2D*> tex_resolveBufs(renderpass->num_resolve_attachments());
 		for (size_t i = 0; i < renderpass->num_resolve_attachments(); i++)
-		{
-			resolveBufs[i]->apply_barrier_as_attachment(*cmdBuf);
 			tex_resolveBufs[i] = resolveBufs[i]->internal();
-		}
 
 		ViewBuf h_uniform(offsets[num_params]);
 		for (size_t i = 0; i < num_params; i++)
@@ -862,17 +847,11 @@ namespace VkInline
 
 		std::vector<Internal::Texture2D*> i_tex2ds(renderpass->num_tex2d());
 		for (size_t i = 0; i < i_tex2ds.size(); i++)
-		{
-			tex2ds[i]->apply_barrier_as_texture(*cmdBuf, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
 			i_tex2ds[i] = tex2ds[i]->internal();
-		}
 
 		std::vector<Internal::Texture3D*> i_tex3ds(renderpass->num_tex3d());
 		for (size_t i = 0; i < i_tex3ds.size(); i++)
-		{
-			tex3ds[i]->apply_barrier(*cmdBuf, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
 			i_tex3ds[i] = tex3ds[i]->internal();
-		}
 
 		cmdBuf->draw(tex_colorBufs.data(), tex_depthBuf, tex_resolveBufs.data(), clear_colors, clear_depth, h_uniform.data(), i_tex2ds.data(), i_tex3ds.data(), vertex_counts);
 

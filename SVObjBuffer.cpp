@@ -68,27 +68,7 @@ namespace VkInline
 		{
 			m_elems[i]->apply_barriers(cmdbuf, dstFlags);
 		}
-
-		VkBufferMemoryBarrier barriers[1];
-		barriers[0] = {};
-		barriers[0].sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-		barriers[0].buffer = m_data->buf();
-		barriers[0].offset = 0;
-		barriers[0].size = VK_WHOLE_SIZE;
-		barriers[0].srcAccessMask = 0;
-		barriers[0].dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
-		barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-
-		vkCmdPipelineBarrier(
-			cmdbuf.buf(),
-			VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-			dstFlags,
-			0,
-			0, nullptr,
-			1, barriers,
-			0, nullptr
-		);
+		m_data->apply_barrier(cmdbuf, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, dstFlags);
 	}
 
 }

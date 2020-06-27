@@ -360,7 +360,6 @@ namespace VkInline
 			return vkGetBufferDeviceAddressEXT(ctx->device(), &bufAdrInfo);
 		}
 
-
 		Buffer::Buffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags flags)
 		{
 			if (size == 0) return;
@@ -400,6 +399,8 @@ namespace VkInline
 
 			vkAllocateMemory(ctx->device(), &memoryAllocateInfo, nullptr, &m_mem);
 			vkBindBufferMemory(ctx->device(), m_buf, m_mem, 0);
+
+			m_cur_access_mask = 0;
 		}
 
 		Buffer::~Buffer()
@@ -408,6 +409,31 @@ namespace VkInline
 			vkDestroyBuffer(ctx->device(), m_buf, nullptr);
 			vkFreeMemory(ctx->device(), m_mem, nullptr);
 		}
+
+		void Buffer::apply_barrier(const CommandBuffer& cmdbuf, VkAccessFlags dstAccessMask, VkPipelineStageFlags dstStageMask) const
+		{
+			VkBufferMemoryBarrier barrier = {};
+			barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+			barrier.buffer = m_buf;
+			barrier.offset = 0;
+			barrier.size = VK_WHOLE_SIZE;
+			barrier.srcAccessMask = m_cur_access_mask;
+			barrier.dstAccessMask = dstAccessMask;
+			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+			vkCmdPipelineBarrier(
+				cmdbuf.buf(),
+				VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+				dstStageMask,
+				0,
+				0, nullptr,
+				1, &barrier,
+				0, nullptr
+			);
+			m_cur_access_mask = dstAccessMask;
+		}
+
 
 		UploadBuffer::UploadBuffer(VkDeviceSize size, VkBufferUsageFlags usage) :
 			Buffer(size, usage | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) {	}
@@ -463,47 +489,27 @@ namespace VkInline
 		class CommandBuf_DevBufUpload : public AutoCommandBuffer
 		{
 		public:
-			CommandBuf_DevBufUpload(VkDeviceSize size, VkBuffer buf) : m_staging_buf(size)
+			CommandBuf_DevBufUpload(VkDeviceSize size, Buffer* buf) : m_staging_buf(size)
 			{
 				m_staging_buf.zero();
 				_upload(size, buf);
 			}
 
-			CommandBuf_DevBufUpload(VkDeviceSize size, VkBuffer buf, const void* hdata) : m_staging_buf(size)
+			CommandBuf_DevBufUpload(VkDeviceSize size, Buffer* buf, const void* hdata) : m_staging_buf(size)
 			{
 				m_staging_buf.upload(hdata);
 				_upload(size, buf);
 			}
 
 		private:
-			void _upload(VkDeviceSize size, VkBuffer buf)
+			void _upload(VkDeviceSize size, Buffer* buf)
 			{
-				VkBufferMemoryBarrier barriers[1];
-				barriers[0] = {};
-				barriers[0].sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-				barriers[0].buffer = buf;
-				barriers[0].offset = 0;
-				barriers[0].size = VK_WHOLE_SIZE;
-				barriers[0].srcAccessMask = 0;
-				barriers[0].dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-				barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-				barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-
-				vkCmdPipelineBarrier(
-					m_buf,
-					VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-					VK_PIPELINE_STAGE_TRANSFER_BIT,
-					0,
-					0, nullptr,
-					1, barriers,
-					0, nullptr
-				);
-
+				buf->apply_barrier(*this, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 				VkBufferCopy copyRegion = {};
 				copyRegion.srcOffset = 0;
 				copyRegion.dstOffset = 0;
 				copyRegion.size = size;
-				vkCmdCopyBuffer(m_buf, m_staging_buf.buf(), buf, 1, &copyRegion);
+				vkCmdCopyBuffer(m_buf, m_staging_buf.buf(), buf->buf(), 1, &copyRegion);
 			}
 
 			UploadBuffer m_staging_buf;
@@ -512,14 +518,14 @@ namespace VkInline
 
 		void DeviceBuffer::upload(const void* hdata)
 		{
-			auto cmdBuf = new CommandBuf_DevBufUpload(m_size, m_buf, hdata);
+			auto cmdBuf = new CommandBuf_DevBufUpload(m_size, this, hdata);
 			const Context* ctx = Context::get_context();
 			ctx->SubmitCommandBuffer(cmdBuf);
 		}
 
 		void DeviceBuffer::zero()
 		{
-			auto cmdBuf = new CommandBuf_DevBufUpload(m_size, m_buf);
+			auto cmdBuf = new CommandBuf_DevBufUpload(m_size, this);
 			const Context* ctx = Context::get_context();
 			ctx->SubmitCommandBuffer(cmdBuf);
 		}
@@ -532,26 +538,7 @@ namespace VkInline
 			DownloadBuffer staging_buf(end - begin);
 			auto cmdBuf = new AutoCommandBuffer;
 
-			VkBufferMemoryBarrier barriers[1];
-			barriers[0] = {};
-			barriers[0].sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-			barriers[0].buffer = m_buf;
-			barriers[0].offset = 0;
-			barriers[0].size = VK_WHOLE_SIZE;
-			barriers[0].srcAccessMask = 0;
-			barriers[0].dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-			barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-
-			vkCmdPipelineBarrier(
-				cmdBuf->buf(),
-				VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-				VK_PIPELINE_STAGE_TRANSFER_BIT,
-				0,
-				0, nullptr,
-				1, barriers,
-				0, nullptr
-			);
+			apply_barrier(*cmdBuf, VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 
 			VkBufferCopy copyRegion = {};
 			copyRegion.srcOffset = begin;
@@ -655,8 +642,10 @@ namespace VkInline
 			createInfo.subresourceRange.baseArrayLayer = 0;
 			createInfo.subresourceRange.layerCount = 1;
 			vkCreateImageView(ctx->device(), &createInfo, nullptr, &m_view);
-		}
 
+			m_cur_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+			m_cur_access_mask = 0;
+		}
 
 		Texture2D::~Texture2D()
 		{
@@ -667,41 +656,49 @@ namespace VkInline
 			vkFreeMemory(ctx->device(), m_mem, nullptr);
 		}
 
+		void Texture2D::apply_barrier(const CommandBuffer& cmdbuf, VkImageLayout newLayout, VkAccessFlags dstAccessMask, VkPipelineStageFlags dstStageMask) const
+		{
+			VkImageMemoryBarrier barriers[1];
+			barriers[0] = {};
+			barriers[0].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+			barriers[0].oldLayout = m_cur_layout;
+			barriers[0].newLayout = newLayout;
+			barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barriers[0].image = m_image;
+			barriers[0].subresourceRange.aspectMask = m_aspect;
+			barriers[0].subresourceRange.baseMipLevel = 0;
+			barriers[0].subresourceRange.levelCount = 1;
+			barriers[0].subresourceRange.baseArrayLayer = 0;
+			barriers[0].subresourceRange.layerCount = 1;
+			barriers[0].srcAccessMask = m_cur_access_mask;
+			barriers[0].dstAccessMask = dstAccessMask;
+
+			vkCmdPipelineBarrier(
+				cmdbuf.buf(),
+				VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+				dstStageMask,
+				0,
+				0, nullptr,
+				0, nullptr,
+				1, barriers
+			);
+
+			m_cur_layout = newLayout;
+			m_cur_access_mask = dstAccessMask;
+		}
+
 		class CommandBuf_TexUpload : public AutoCommandBuffer
 		{
 		public:
-			CommandBuf_TexUpload(int width, int height, unsigned pixel_size, unsigned samples, VkImage image, VkImageAspectFlags aspectFlags, const void* hdata)
+			CommandBuf_TexUpload(int width, int height, unsigned pixel_size, unsigned samples, Texture2D* tex, const void* hdata)
 				: m_staging_buf(width*height*pixel_size*samples)
 			{
 				m_staging_buf.upload(hdata);
-
-				VkImageMemoryBarrier barrier = {};
-				barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-				barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-				barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-				barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-				barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-				barrier.image = image;
-				barrier.subresourceRange.aspectMask = aspectFlags;
-				barrier.subresourceRange.baseMipLevel = 0;
-				barrier.subresourceRange.levelCount = 1;
-				barrier.subresourceRange.baseArrayLayer = 0;
-				barrier.subresourceRange.layerCount = 1;
-				barrier.srcAccessMask = 0;
-				barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-				vkCmdPipelineBarrier(
-					m_buf,
-					VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-					VK_PIPELINE_STAGE_TRANSFER_BIT,
-					0,
-					0, nullptr,
-					0, nullptr,
-					1, &barrier
-				);
-
+				tex->apply_barrier(*this, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+		
 				VkBufferImageCopy region = {};
-				region.imageSubresource.aspectMask = aspectFlags;
+				region.imageSubresource.aspectMask = tex->aspect();
 				region.imageSubresource.layerCount = 1;
 				region.imageExtent = {
 					(uint32_t)width,
@@ -712,7 +709,7 @@ namespace VkInline
 				vkCmdCopyBufferToImage(
 					m_buf,
 					m_staging_buf.buf(),
-					image,
+					tex->image(),
 					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 					1,
 					&region
@@ -725,7 +722,7 @@ namespace VkInline
 
 		void Texture2D::upload(const void* hdata)
 		{
-			auto cmdBuf = new CommandBuf_TexUpload(m_width, m_height, pixel_size(), m_sampleCount, m_image, m_aspect, hdata);
+			auto cmdBuf = new CommandBuf_TexUpload(m_width, m_height, pixel_size(), m_sampleCount, this, hdata);
 			const Context* ctx = Context::get_context();
 			ctx->SubmitCommandBuffer(cmdBuf);
 		}
@@ -737,30 +734,7 @@ namespace VkInline
 
 			auto cmdBuf = new AutoCommandBuffer;
 
-			VkImageMemoryBarrier barrier = {};
-			barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-			barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barrier.image = m_image;
-			barrier.subresourceRange.aspectMask = m_aspect;
-			barrier.subresourceRange.baseMipLevel = 0;
-			barrier.subresourceRange.levelCount = 1;
-			barrier.subresourceRange.baseArrayLayer = 0;
-			barrier.subresourceRange.layerCount = 1;
-			barrier.srcAccessMask = 0;
-			barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-
-			vkCmdPipelineBarrier(
-				cmdBuf->buf(),
-				VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-				VK_PIPELINE_STAGE_TRANSFER_BIT,
-				0,
-				0, nullptr,
-				0, nullptr,
-				1, &barrier
-			);
+			apply_barrier(*cmdBuf, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);		
 
 			VkBufferImageCopy region = {};
 			region.imageSubresource.aspectMask = m_aspect;
@@ -870,38 +844,47 @@ namespace VkInline
 			vkFreeMemory(ctx->device(), m_mem, nullptr);
 		}
 
+		void Texture3D::apply_barrier(const CommandBuffer& cmdbuf, VkImageLayout newLayout, VkAccessFlags dstAccessMask, VkPipelineStageFlags dstStageMask) const
+		{
+			VkImageMemoryBarrier barriers[1];
+			barriers[0] = {};
+			barriers[0].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+			barriers[0].oldLayout = m_cur_layout;
+			barriers[0].newLayout = newLayout;
+			barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barriers[0].image = m_image;
+			barriers[0].subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			barriers[0].subresourceRange.baseMipLevel = 0;
+			barriers[0].subresourceRange.levelCount = 1;
+			barriers[0].subresourceRange.baseArrayLayer = 0;
+			barriers[0].subresourceRange.layerCount = 1;
+			barriers[0].srcAccessMask = m_cur_access_mask;
+			barriers[0].dstAccessMask = dstAccessMask;
+
+			vkCmdPipelineBarrier(
+				cmdbuf.buf(),
+				VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+				dstStageMask,
+				0,
+				0, nullptr,
+				0, nullptr,
+				1, barriers
+			);
+
+			m_cur_layout = newLayout;
+			m_cur_access_mask = dstAccessMask;
+		}
+
+
 		class CommandBuf_Tex3DUpload : public AutoCommandBuffer
 		{
 		public:
-			CommandBuf_Tex3DUpload(int dims[3], unsigned pixel_size, VkImage image, const void* hdata)
+			CommandBuf_Tex3DUpload(int dims[3], unsigned pixel_size, Texture3D* tex, const void* hdata)
 				: m_staging_buf(dims[0] * dims[1] * dims[2] * pixel_size)
 			{
 				m_staging_buf.upload(hdata);
-
-				VkImageMemoryBarrier barrier = {};
-				barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-				barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-				barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-				barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-				barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-				barrier.image = image;
-				barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-				barrier.subresourceRange.baseMipLevel = 0;
-				barrier.subresourceRange.levelCount = 1;
-				barrier.subresourceRange.baseArrayLayer = 0;
-				barrier.subresourceRange.layerCount = 1;
-				barrier.srcAccessMask = 0;
-				barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-				vkCmdPipelineBarrier(
-					m_buf,
-					VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-					VK_PIPELINE_STAGE_TRANSFER_BIT,
-					0,
-					0, nullptr,
-					0, nullptr,
-					1, &barrier
-				);
+				tex->apply_barrier(*this, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 
 				VkBufferImageCopy region = {};
 				region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -915,7 +898,7 @@ namespace VkInline
 				vkCmdCopyBufferToImage(
 					m_buf,
 					m_staging_buf.buf(),
-					image,
+					tex->image(),
 					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 					1,
 					&region
@@ -928,7 +911,7 @@ namespace VkInline
 
 		void Texture3D::upload(const void* hdata)
 		{
-			auto cmdBuf = new CommandBuf_Tex3DUpload(m_dims, pixel_size(), m_image, hdata);
+			auto cmdBuf = new CommandBuf_Tex3DUpload(m_dims, pixel_size(), this, hdata);
 			const Context* ctx = Context::get_context();
 			ctx->SubmitCommandBuffer(cmdBuf);
 		}
@@ -939,31 +922,7 @@ namespace VkInline
 			DownloadBuffer staging_buf(m_dims[0] * m_dims[1] * m_dims[2] *pixel_size());
 
 			auto cmdBuf = new AutoCommandBuffer;
-
-			VkImageMemoryBarrier barrier = {};
-			barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-			barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barrier.image = m_image;
-			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			barrier.subresourceRange.baseMipLevel = 0;
-			barrier.subresourceRange.levelCount = 1;
-			barrier.subresourceRange.baseArrayLayer = 0;
-			barrier.subresourceRange.layerCount = 1;
-			barrier.srcAccessMask = 0;
-			barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-
-			vkCmdPipelineBarrier(
-				cmdBuf->buf(),
-				VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-				VK_PIPELINE_STAGE_TRANSFER_BIT,
-				0,
-				0, nullptr,
-				0, nullptr,
-				1, &barrier
-			);
+			apply_barrier(*cmdBuf, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 
 			VkBufferImageCopy region = {};
 			region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -1216,6 +1175,7 @@ namespace VkInline
 				tex2dInfos[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 				tex2dInfos[i].imageView = tex2ds[i]->view();
 				tex2dInfos[i].sampler = m_pipeline->sampler()->sampler();
+				tex2ds[i]->apply_barrier(*this, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 			}
 
 			std::vector<VkDescriptorImageInfo> tex3dInfos(m_pipeline->num_tex3d());
@@ -1225,6 +1185,7 @@ namespace VkInline
 				tex3dInfos[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 				tex3dInfos[i].imageView = tex3ds[i]->view();
 				tex3dInfos[i].sampler = m_pipeline->sampler()->sampler();
+				tex3ds[i]->apply_barrier(*this, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 			}			
 
 			std::vector<VkWriteDescriptorSet> list_wds;
@@ -1254,28 +1215,7 @@ namespace VkInline
 			vkUpdateDescriptorSets(ctx->device(), (unsigned)list_wds.size(), list_wds.data(), 0, nullptr);
 
 			if (m_ubo != nullptr)
-			{
-				VkBufferMemoryBarrier barriers[1];
-				barriers[0] = {};
-				barriers[0].sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-				barriers[0].buffer = m_ubo->buf();
-				barriers[0].offset = 0;
-				barriers[0].size = VK_WHOLE_SIZE;
-				barriers[0].srcAccessMask = 0;
-				barriers[0].dstAccessMask = VK_ACCESS_UNIFORM_READ_BIT;
-				barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-				barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-
-				vkCmdPipelineBarrier(
-					m_buf,
-					VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-					VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-					0,
-					0, nullptr,
-					1, barriers,
-					0, nullptr
-				);
-			}
+				m_ubo->apply_barrier(*this, VK_ACCESS_UNIFORM_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
 			vkCmdBindPipeline(m_buf, VK_PIPELINE_BIND_POINT_COMPUTE, m_pipeline->pipeline());
 			vkCmdBindDescriptorSets(m_buf, VK_PIPELINE_BIND_POINT_COMPUTE, m_pipeline->layout_pipeline(), 0, 1, &m_descriptorSet, 0, 0);
@@ -1711,6 +1651,7 @@ namespace VkInline
 				tex2dInfos[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 				tex2dInfos[i].imageView = tex2ds[i]->view();
 				tex2dInfos[i].sampler = m_render_pass->sampler()->sampler();
+				tex2ds[i]->apply_barrier(*this, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 			}
 
 			std::vector<VkDescriptorImageInfo> tex3dInfos(m_render_pass->num_tex3d());
@@ -1720,6 +1661,7 @@ namespace VkInline
 				tex3dInfos[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 				tex3dInfos[i].imageView = tex3ds[i]->view();
 				tex3dInfos[i].sampler = m_render_pass->sampler()->sampler();
+				tex3ds[i]->apply_barrier(*this, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 			}
 
 			std::vector<VkWriteDescriptorSet> list_wds;
@@ -1764,13 +1706,17 @@ namespace VkInline
 						width = colorBufs[i]->width();
 						height = colorBufs[i]->height();
 					}
+					colorBufs[i]->apply_barrier(*this, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
 				}
+
 				if (m_render_pass->has_depth_attachment())
 				{
 					views.push_back(depthBuf->view());
 					width = depthBuf->width();
 					height = depthBuf->height();
+					depthBuf->apply_barrier(*this, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT| VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
 				}
+
 				for (size_t i = 0; i < m_render_pass->num_resolve_attachments(); i++)
 				{
 					views.push_back(resolveBufs[i]->view());
@@ -1801,28 +1747,7 @@ namespace VkInline
 			}
 
 			if (m_ubo != nullptr)
-			{
-				VkBufferMemoryBarrier barriers[1];
-				barriers[0] = {};
-				barriers[0].sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-				barriers[0].buffer = m_ubo->buf();
-				barriers[0].offset = 0;
-				barriers[0].size = VK_WHOLE_SIZE;
-				barriers[0].srcAccessMask = 0;
-				barriers[0].dstAccessMask = VK_ACCESS_UNIFORM_READ_BIT;
-				barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-				barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-
-				vkCmdPipelineBarrier(
-					m_buf,
-					VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-					VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-					0,
-					0, nullptr,
-					1, barriers,
-					0, nullptr
-				);
-			}
+				m_ubo->apply_barrier(*this, VK_ACCESS_UNIFORM_READ_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
 
 			VkRenderPassBeginInfo renderPassInfo = {};
 			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -1848,12 +1773,16 @@ namespace VkInline
 			vkCmdBeginRenderPass(m_buf, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 			for (size_t i = 0; i < m_render_pass->num_pipelines(); i++)
 			{
-				vkCmdBindPipeline(m_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, m_render_pass->pipeline(i));
+				vkCmdBindPipeline(m_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, m_render_pass->pipeline((int)i));
 				vkCmdSetViewport(m_buf, 0, 1, &viewport);
 				vkCmdSetScissor(m_buf, 0, 1, &scissor);
 				vkCmdBindDescriptorSets(m_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, m_render_pass->layout_pipeline(), 0, 1, &m_descriptorSet, 0, nullptr);
 				vkCmdDraw(m_buf, vertex_counts[i], 1, 0, 0);
 			}
+
+			for (size_t i = 0; i < m_render_pass->num_resolve_attachments(); i++)
+				resolveBufs[i]->apply_barrier(*this, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+
 			vkCmdEndRenderPass(m_buf);
 
 		}
