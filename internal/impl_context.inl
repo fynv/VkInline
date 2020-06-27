@@ -90,7 +90,11 @@ namespace VkInline
 			"#extension GL_GOOGLE_include_directive : enable\n"
 			"#extension GL_EXT_shader_explicit_arithmetic_types_int64 : enable\n"
 			"#extension GL_EXT_buffer_reference2 : enable\n"
+			"#extension GL_EXT_nonuniform_qualifier : enable\n"
 			"#extension GL_EXT_scalar_block_layout : enable\n";
+
+		saxpy += "layout(binding = 1) uniform sampler2D arr_tex2d[];\n";
+		saxpy += "layout(binding = 2) uniform sampler3D arr_tex3d[];\n";
 
 		for (size_t i = 0; i < m_code_blocks.size(); i++)
 		{
@@ -190,7 +194,11 @@ namespace VkInline
 			"#extension GL_GOOGLE_include_directive : enable\n"
 			"#extension GL_EXT_shader_explicit_arithmetic_types_int64 : enable\n"
 			"#extension GL_EXT_buffer_reference2 : enable\n"
+			"#extension GL_EXT_nonuniform_qualifier : enable\n"
 			"#extension GL_EXT_scalar_block_layout : enable\n";
+
+		saxpy += "layout(binding = 1) uniform sampler2D arr_tex2d[];\n";
+		saxpy += "layout(binding = 2) uniform sampler3D arr_tex3d[];\n";
 
 		for (size_t i = 0; i < m_code_blocks.size(); i++)
 		{
@@ -333,15 +341,45 @@ namespace VkInline
 		return str_hash;
 	}
 
+	class Signature
+	{
+	public:
+		Signature() {}
+		~Signature() {}
+
+		void push_feature(const void* feature, size_t size)
+		{
+			size_t offset = m_data.size();
+			m_data.resize(offset + size);
+			memcpy(m_data.data() + offset, feature, size);
+		}
+
+		unsigned long long get_hash()
+		{
+			return (unsigned long long)crc64(0, m_data.data(), m_data.size());
+		}
+
+	private:
+		std::vector<unsigned char> m_data;
+
+	};
+
 	unsigned Context::_build_compute_pipeline(dim_type blockDim, const std::vector<CapturedShaderViewable>& arg_map, size_t num_tex2d, size_t num_tex3d, const char* code_body)
 	{
+		Signature sig;
+		sig.push_feature(&num_tex2d, sizeof(size_t));
+		sig.push_feature(&num_tex3d, sizeof(size_t));
+
 		std::string saxpy =
 			"#version 460\n"
 			"#extension GL_GOOGLE_include_directive : enable\n"
 			"#extension GL_EXT_shader_explicit_arithmetic_types_int64 : enable\n"
 			"#extension GL_EXT_buffer_reference2 : enable\n"
 			"#extension GL_EXT_nonuniform_qualifier : enable\n"
-			"#extension GL_EXT_scalar_block_layout : enable\n";
+			"#extension GL_EXT_scalar_block_layout : enable\n";		
+
+		saxpy += "layout(binding = 1) uniform sampler2D arr_tex2d[];\n";
+		saxpy += "layout(binding = 2) uniform sampler3D arr_tex3d[];\n";
 
 		for (size_t i = 0; i < m_code_blocks.size(); i++)
 		{
@@ -351,6 +389,7 @@ namespace VkInline
 		saxpy += std::string("#include \"") + m_name_header_of_dynamic_code + "\"\n";
 
 		char line[1024];
+	
 		if (arg_map.size() > 0)
 		{
 			saxpy +=
@@ -364,18 +403,6 @@ namespace VkInline
 			saxpy += "};\n";
 		}
 
-		if (num_tex2d > 0)
-		{
-			sprintf(line, "layout(binding = 1) uniform sampler2D arr_tex2d[%d];\n", (int)num_tex2d);
-			saxpy += line;
-		}
-
-		if (num_tex3d > 0)
-		{
-			sprintf(line, "layout(binding = 2) uniform sampler3D arr_tex3d[%d];\n", (int)num_tex3d);
-			saxpy += line;
-		}
-
 		sprintf(line, "layout(local_size_x = %d, local_size_y = %d, local_size_z = %d) in;\n", blockDim.x, blockDim.y, blockDim.z);
 		saxpy += line;
 		saxpy += std::string(code_body);
@@ -387,14 +414,16 @@ namespace VkInline
 				print_code(m_name_header_of_dynamic_code.c_str(), m_header_of_dynamic_code.c_str());
 			}
 			print_code("saxpy.comp", saxpy.c_str());
-		}
+		}	
 
-		unsigned long long hash = s_get_hash(saxpy.c_str());
+		unsigned long long hash_shader = s_get_hash(saxpy.c_str());
+		sig.push_feature(&hash_shader, sizeof(unsigned long long));
+		unsigned long long hash_pipeline = sig.get_hash();
 		unsigned kid = (unsigned)(-1);
 
 		std::unique_lock<std::shared_mutex> lock(m_mutex_compute_pipelines);
 			
-		auto it = m_map_compute_pipelines.find(hash);
+		auto it = m_map_compute_pipelines.find(hash_pipeline);
 		if (it != m_map_compute_pipelines.end())
 		{
 			kid = it->second;
@@ -405,7 +434,7 @@ namespace VkInline
 		/// Try finding an existing spv in cache
 		{
 			char key[64];
-			sprintf(key, "%016llx", hash);
+			sprintf(key, "%016llx", hash_shader);
 			unqlite *pDb;
 			if (UNQLITE_OK == unqlite_open(&pDb, s_name_db, UNQLITE_OPEN_CREATE))
 			{
@@ -436,7 +465,7 @@ namespace VkInline
 			}
 			{
 				char key[64];
-				sprintf(key, "%016llx", hash);
+				sprintf(key, "%016llx", hash_shader);
 				unqlite *pDb;
 				if (UNQLITE_OK == unqlite_open(&pDb, s_name_db, UNQLITE_OPEN_CREATE))
 				{
@@ -449,7 +478,7 @@ namespace VkInline
 		Internal::ComputePipeline* pipeline = new Internal::ComputePipeline(spv, num_tex2d, num_tex3d);
 		m_cache_compute_pipelines.push_back(pipeline);
 		kid = (unsigned)m_cache_compute_pipelines.size() - 1;
-		m_map_compute_pipelines[hash] = kid;
+		m_map_compute_pipelines[hash_pipeline] = kid;
 
 		return kid;
 	}
@@ -577,35 +606,14 @@ namespace VkInline
 		return launch_compute(gridDim, arg_map.size(), args.data(), tex2ds.data(), tex3ds.data(), kid, offsets);
 	}
 
-	class Signature
-	{
-	public:
-		Signature() {}
-		~Signature() {}
-
-		void push_feature(const void* feature, size_t size)
-		{
-			size_t offset = m_data.size();
-			m_data.resize(offset + size);
-			memcpy(m_data.data() + offset, feature, size);
-		}
-
-		unsigned long long get_hash()
-		{
-			return (unsigned long long)crc64(0, m_data.data(), m_data.size());
-		}
-
-	private:
-		std::vector<unsigned char> m_data;
-
-	};
-
 	unsigned Context::_build_render_pass(
 		const std::vector <Internal::AttachmentInfo>& color_attachmentInfo, const Internal::AttachmentInfo* depth_attachmentInfo, const std::vector <Internal::AttachmentInfo>& resolve_attachmentInfo,
 		const std::vector<CapturedShaderViewable>& arg_map, size_t num_tex2d, size_t num_tex3d, const std::vector<const DrawCall*>& draw_calls)
 	{
-
 		Signature sig;
+		sig.push_feature(&num_tex2d, sizeof(size_t));
+		sig.push_feature(&num_tex3d, sizeof(size_t));
+
 		for (size_t i = 0; i < color_attachmentInfo.size(); i++)
 			sig.push_feature(&color_attachmentInfo[i], sizeof(Internal::AttachmentInfo));
 		if (depth_attachmentInfo!=nullptr)
@@ -627,6 +635,9 @@ namespace VkInline
 			"#extension GL_EXT_nonuniform_qualifier : enable\n"
 			"#extension GL_EXT_scalar_block_layout : enable\n";
 
+		saxpy += "layout(binding = 1) uniform sampler2D arr_tex2d[];\n";
+		saxpy += "layout(binding = 2) uniform sampler3D arr_tex3d[];\n";
+
 		for (size_t i = 0; i < m_code_blocks.size(); i++)
 		{
 			saxpy += m_code_blocks[i];
@@ -646,18 +657,6 @@ namespace VkInline
 				saxpy += line;
 			}
 			saxpy += "};\n";
-		}
-
-		if (num_tex2d > 0)
-		{
-			sprintf(line, "layout(binding = 1) uniform sampler2D arr_tex2d[%d];\n", (int)num_tex2d);
-			saxpy += line;
-		}
-
-		if (num_tex3d > 0)
-		{
-			sprintf(line, "layout(binding = 2) uniform sampler3D arr_tex3d[%d];\n", (int)num_tex3d);
-			saxpy += line;
 		}
 
 		std::vector<std::string> code_vert(draw_calls.size());
