@@ -677,9 +677,14 @@ namespace VkInline
 
 			sig.push_feature(&hash_vert[i], sizeof(unsigned long long));
 			sig.push_feature(&hash_frag[i], sizeof(unsigned long long));
-			std::vector<unsigned char> buf_pipe_states(draw_calls[i]->size_states());
-			draw_calls[i]->get_states(buf_pipe_states.data());
-			sig.push_feature(buf_pipe_states.data(), buf_pipe_states.size());
+			const Internal::GraphicsPipelineStates& states = draw_calls[i]->get_states(color_attachmentInfo.size());
+			sig.push_feature(&states.inputAssembly.flags, sizeof(VkPipelineInputAssemblyStateCreateInfo)-((char*)&states.inputAssembly.flags- (char*)&states.inputAssembly));
+			sig.push_feature(&states.rasterizer.flags, sizeof(VkPipelineRasterizationStateCreateInfo) - ((char*)&states.rasterizer.flags - (char*)&states.rasterizer));
+			for (size_t j = 0; j < color_attachmentInfo.size(); j++)
+				sig.push_feature(&states.colorBlendAttachments[j], sizeof(VkPipelineColorBlendAttachmentState));			
+			sig.push_feature(&states.colorBlending.flags, ((char*)&states.colorBlending.pAttachments - (char*)&states.colorBlending.flags));
+			sig.push_feature(states.colorBlending.blendConstants, sizeof(float) * 4);
+			sig.push_feature(&states.depthStencil.flags, sizeof(VkPipelineDepthStencilStateCreateInfo) - ((char*)&states.depthStencil.flags - (char*)&states.depthStencil));
 		}
 
 		unsigned long long hash_render_pass = sig.get_hash();
@@ -794,7 +799,7 @@ namespace VkInline
 			}
 			pipelineInfo[i].spv_vert = &spv_vert[i];
 			pipelineInfo[i].spv_frag = &spv_frag[i];
-			draw_calls[i]->get_states(&pipelineInfo[i].depth_enable);
+			pipelineInfo[i].states = draw_calls[i]->get_states(color_attachmentInfo.size());
 		}
 
 		Internal::RenderPass* renderpass = new Internal::RenderPass(color_attachmentInfo, depth_attachmentInfo, resolve_attachmentInfo, pipelineInfo, num_tex2d, num_tex3d);

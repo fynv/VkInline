@@ -14,6 +14,7 @@ namespace VkInline
 		class Texture2D;
 		class Texture3D;
 		class CommandBufferRecycler;
+		struct GraphicsPipelineStates;
 	}
 
 	struct dim_type
@@ -103,33 +104,33 @@ namespace VkInline
 	{
 	public:
 		DrawCall(const char* code_body_vert, const char* code_body_frag);
+		~DrawCall();
 
-		void set_depth_enable(bool enable) { m_depth_enable = enable; }
-		void set_depth_write(bool enable) { m_depth_write = enable; }
+		void set_depth_enable(bool enable);
+		void set_depth_write(bool enable);
+		void set_depth_comapre_op(unsigned op);
+
 		void set_color_write(bool enable) { m_color_write = enable; }
 		void set_alpha_write(bool enable) { m_alpha_write = enable; }
-		void set_alpha_blend(bool enable) { m_alpha_blend = enable;  }
-		void set_depth_comapre_op(unsigned op) { m_compare_op = op; }
+		void set_alpha_blend(bool enable) { m_alpha_blend = enable; }		
 
 		const char* code_body_vert() const { return m_code_body_vert.c_str(); }
 		const char* code_body_frag() const { return m_code_body_frag.c_str(); }
 
-		size_t size_states() const;
-		void get_states(void* p_data) const;
-		
+		const Internal::GraphicsPipelineStates& get_states(int num_color_att) const;		
 
 	private:
 		std::string m_code_body_vert;
 		std::string m_code_body_frag;
-		
-		bool m_depth_enable;
-		bool m_depth_write;
+
 		bool m_color_write;
 		bool m_alpha_write;
 		bool m_alpha_blend;
-		unsigned m_compare_op;
 
-		char m_dummy;
+		Internal::GraphicsPipelineStates* m_states;
+
+		void _resize_color_att(int num_color_att) const;
+
 	};
 
 	class Rasterizer

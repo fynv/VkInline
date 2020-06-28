@@ -293,16 +293,20 @@ namespace VkInline
 			bool clear_at_load;
 		};
 
+		struct GraphicsPipelineStates
+		{
+			VkPipelineInputAssemblyStateCreateInfo inputAssembly;
+			VkPipelineRasterizationStateCreateInfo rasterizer;
+			std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments;
+			VkPipelineColorBlendStateCreateInfo colorBlending;
+			VkPipelineDepthStencilStateCreateInfo depthStencil;
+		};
+
 		struct GraphicsPipelineInfo
 		{
 			const std::vector<unsigned>* spv_vert;
 			const std::vector<unsigned>* spv_frag;
-			bool depth_enable;
-			bool depth_write;
-			bool color_write;
-			bool alpha_write;
-			bool alpha_blend;
-			unsigned compare_op;
+			GraphicsPipelineStates states;
 		};
 
 		class RenderPass

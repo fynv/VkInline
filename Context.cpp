@@ -294,22 +294,76 @@ namespace VkInline
 		m_code_body_vert = code_body_vert;
 		m_code_body_frag = code_body_frag;
 
-		m_depth_enable = true;
-		m_depth_write = true;
 		m_color_write = true;
 		m_alpha_write = true;
 		m_alpha_blend = false;
-		m_compare_op = 1;
+
+		m_states = new Internal::GraphicsPipelineStates;
+
+		m_states->inputAssembly = {};
+		m_states->inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+		m_states->inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+		m_states->inputAssembly.primitiveRestartEnable = VK_FALSE;
+
+		m_states->rasterizer = {};
+		m_states->rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+		m_states->rasterizer.lineWidth = 1.0f;
+
+		m_states->colorBlending = {};
+		m_states->colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+		
+		m_states->depthStencil = {};
+		m_states->depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+		m_states->depthStencil.depthTestEnable = VK_TRUE;
+		m_states->depthStencil.depthWriteEnable = VK_TRUE;
+		m_states->depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
 	}
 
-	size_t DrawCall::size_states() const
+	DrawCall::~DrawCall()
 	{
-		return &m_dummy - (char*)&m_depth_enable;
+		delete m_states;
 	}
 
-	void DrawCall::get_states(void* p_data) const
+	void DrawCall::set_depth_enable(bool enable)
 	{
-		memcpy(p_data, &m_depth_enable, size_states());
+		m_states->depthStencil.depthTestEnable = enable ? VK_TRUE : VK_FALSE;
+	}
+
+	void DrawCall::set_depth_write(bool enable)
+	{
+		m_states->depthStencil.depthWriteEnable = enable ? VK_TRUE : VK_FALSE;
+	}
+
+	void DrawCall::set_depth_comapre_op(unsigned op)
+	{
+		m_states->depthStencil.depthCompareOp = (VkCompareOp)op;
+	}
+
+	void DrawCall::_resize_color_att(int num_color_att) const
+	{
+		VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
+		if (m_color_write)
+			colorBlendAttachment.colorWriteMask |= VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT;
+		if (m_alpha_write)
+			colorBlendAttachment.colorWriteMask |= VK_COLOR_COMPONENT_A_BIT;
+		if (m_alpha_blend)
+		{
+			colorBlendAttachment.blendEnable = VK_TRUE;
+			colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+			colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+			colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+			colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+		}
+		m_states->colorBlendAttachments.resize(num_color_att, colorBlendAttachment);
+	}
+
+	const Internal::GraphicsPipelineStates& DrawCall::get_states(int num_color_att) const
+	{
+		size_t cur_num_att = m_states->colorBlendAttachments.size();
+		if (cur_num_att < num_color_att) _resize_color_att(num_color_att);
+		m_states->colorBlending.attachmentCount = (unsigned)num_color_att;
+		m_states->colorBlending.pAttachments = m_states->colorBlendAttachments.data();
+		return *m_states;
 	}
 
 	Rasterizer::Rasterizer(const std::vector<const char*>& param_names, bool type_locked)
