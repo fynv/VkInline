@@ -355,14 +355,14 @@ namespace VkInline
 			colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
 		}
 		m_states->colorBlendAttachments.resize(num_color_att, colorBlendAttachment);
+		m_states->colorBlending.pAttachments = m_states->colorBlendAttachments.data();
 	}
 
 	const Internal::GraphicsPipelineStates& DrawCall::get_states(int num_color_att) const
 	{
+		std::unique_lock<std::mutex> locker(m_mu_colorBlendAttachments);
 		size_t cur_num_att = m_states->colorBlendAttachments.size();
 		if (cur_num_att < num_color_att) _resize_color_att(num_color_att);
-		m_states->colorBlending.attachmentCount = (unsigned)num_color_att;
-		m_states->colorBlending.pAttachments = m_states->colorBlendAttachments.data();
 		return *m_states;
 	}
 

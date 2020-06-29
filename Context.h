@@ -128,7 +128,7 @@ namespace VkInline
 		bool m_alpha_blend;
 
 		Internal::GraphicsPipelineStates* m_states;
-
+		mutable std::mutex m_mu_colorBlendAttachments;
 		void _resize_color_att(int num_color_att) const;
 
 	};
