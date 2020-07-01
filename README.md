@@ -66,8 +66,7 @@ Rasterization is currently very much simplified in VkInline. The limiations are:
 
 * 1 vki.Rasterizer = 1 Vulkan render-pass with 1 subpass. Multi-subpass feature of Vulkan is mostly for tiled-caching applications, which will not be implemented in VkInline.
 * Currently only vertex-shader and fragment-shader programming are supported.
-* User now has very limited control over the pipeline options, which can be set during the construction of a DrawCall object. 
-  The options that are not covered are set to most commonly used values internally. These will be covered progressively in the future.
+* Currently only a sub-set of pipeline options can be configured, during the construction of a DrawCall object. Those not covered are set to default value.
 
 Example:
 

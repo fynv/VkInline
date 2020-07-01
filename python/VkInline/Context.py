@@ -131,17 +131,81 @@ class DrawCall:
         if 'depth_write' in options:
             native.n_drawcall_set_depth_write(self.m_cptr, options['depth_write'])
 
+        if 'depth_compare_op' in options:
+            native.n_drawcall_set_depth_compare_op(self.m_cptr, options['depth_compare_op'])            
+
         if 'color_write' in options:
             native.n_drawcall_set_color_write(self.m_cptr, options['color_write'])
+
+        if 'color_write_r' in options:
+            native.n_drawcall_set_color_write_r(self.m_cptr, options['color_write_r'])
+
+        if 'color_write_g' in options:
+            native.n_drawcall_set_color_write_g(self.m_cptr, options['color_write_g'])
+
+        if 'color_write_b' in options:
+            native.n_drawcall_set_color_write_b(self.m_cptr, options['color_write_b'])
 
         if 'alpha_write' in options:
             native.n_drawcall_set_alpha_write(self.m_cptr, options['alpha_write'])
 
-        if 'alpha_blend' in options:
-            native.n_drawcall_set_alpha_blend(self.m_cptr, options['alpha_blend'])
+        if 'blend_enable' in options:
+            native.n_drawcall_set_blend_enable(self.m_cptr, options['blend_enable'])
 
-        if 'depth_compare_op' in options:
-            native.n_drawcall_set_depth_compare_op(self.m_cptr, options['depth_compare_op'])
+        # for compatibility of legacy code
+        if 'alpha_blend' in options:
+            native.n_drawcall_set_blend_enable(self.m_cptr, options['alpha_blend'])
+
+        if 'src_color_blend_factor' in options:
+            native.n_drawcall_set_src_color_blend_factor(self.m_cptr, options['src_color_blend_factor'])
+
+        if 'dst_color_blend_factor' in options:
+            native.n_drawcall_set_dst_color_blend_factor(self.m_cptr, options['dst_color_blend_factor'])
+
+        if 'color_blend_op' in options:
+            native.n_drawcall_set_color_blend_op(self.m_cptr, options['color_blend_op'])
+
+        if 'src_alpha_blend_factor' in options:
+            native.n_drawcall_set_src_alpha_blend_factor(self.m_cptr, options['src_alpha_blend_factor'])
+
+        if 'dst_alpha_blend_factor' in options:
+            native.n_drawcall_set_dst_alpha_blend_factor(self.m_cptr, options['dst_alpha_blend_factor'])                      
+
+        if 'alpha_blend_op' in options:
+            native.n_drawcall_set_alpha_blend_op(self.m_cptr, options['alpha_blend_op'])  
+
+        if 'blend_constants' in options:
+            c = options['blend_constants']
+            native.n_drawcall_set_alpha_blend_op(self.m_cptr, c[0], c[1], c[2], c[3])  
+
+        if 'color_attachements' in options:
+            lst = options['color_attachements']
+            for i in range(len(lst)):
+                if 'color_write' in lst[i]:
+                    native.n_drawcall_set_ith_color_write(self.m_cptr, i, lst[i]['color_write'])
+                if 'color_write_r' in lst[i]:
+                    native.n_drawcall_set_ith_color_write_r(self.m_cptr, i, lst[i]['color_write_r'])
+                if 'color_write_g' in lst[i]:
+                    native.n_drawcall_set_ith_color_write_g(self.m_cptr, i, lst[i]['color_write_g'])
+                if 'color_write_b' in lst[i]:
+                    native.n_drawcall_set_ith_color_write_b(self.m_cptr, i, lst[i]['color_write_b'])
+                if 'alpha_write' in lst[i]:
+                    native.n_drawcall_set_ith_alpha_write(self.m_cptr, i, lst[i]['alpha_write'])
+                if 'blend_enable' in lst[i]:
+                    native.n_drawcall_set_ith_blend_enable(self.m_cptr, i, lst[i]['blend_enable'])
+                if 'src_color_blend_factor' in lst[i]:
+                    native.n_drawcall_set_ith_src_color_blend_factor(self.m_cptr, i, lst[i]['src_color_blend_factor'])
+                if 'dst_color_blend_factor' in lst[i]:
+                    native.n_drawcall_set_ith_dst_color_blend_factor(self.m_cptr, i, lst[i]['dst_color_blend_factor'])
+                if 'color_blend_op' in lst[i]:
+                    native.n_drawcall_set_ith_color_blend_op(self.m_cptr, i, lst[i]['color_blend_op'])
+                if 'src_alpha_blend_factor' in lst[i]:
+                    native.n_drawcall_set_ith_src_alpha_blend_factor(self.m_cptr, i, lst[i]['src_alpha_blend_factor'])
+                if 'dst_alpha_blend_factor' in lst[i]:
+                    native.n_drawcall_set_ith_dst_alpha_blend_factor(self.m_cptr, i, lst[i]['dst_alpha_blend_factor'])
+                if 'alpha_blend_op' in lst[i]:
+                    native.n_drawcall_set_ith_alpha_blend_op(self.m_cptr, i, lst[i]['alpha_blend_op'])
+
 
     def __del__(self):
         native.n_drawcall_destroy(self.m_cptr)

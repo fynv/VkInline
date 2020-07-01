@@ -49,13 +49,38 @@ void n_drawcall_set_polygon_mode(void* cptr, unsigned mode);
 void n_drawcall_set_cull_mode(void* cptr, unsigned mode);
 void n_drawcall_set_front_face(void* cptr, unsigned mode);
 void n_drawcall_set_line_width(void* cptr, float width);
-
 void n_drawcall_set_depth_enable(void* cptr, unsigned enable);
 void n_drawcall_set_depth_write(void* cptr, unsigned enable);
-void n_drawcall_set_color_write(void* cptr, unsigned enable);
-void n_drawcall_set_alpha_write(void* cptr, unsigned enable);
-void n_drawcall_set_alpha_blend(void* cptr, unsigned enable);
 void n_drawcall_set_depth_compare_op(void* cptr, unsigned op);
+
+void n_drawcall_set_color_write(void* cptr, unsigned enable);
+void n_drawcall_set_color_write_r(void* cptr, unsigned enable);
+void n_drawcall_set_color_write_g(void* cptr, unsigned enable);
+void n_drawcall_set_color_write_b(void* cptr, unsigned enable);
+void n_drawcall_set_alpha_write(void* cptr, unsigned enable);
+void n_drawcall_set_blend_enable(void* cptr, unsigned enable);
+void n_drawcall_set_src_color_blend_factor(void* cptr, unsigned factor);
+void n_drawcall_set_dst_color_blend_factor(void* cptr, unsigned factor);
+void n_drawcall_set_color_blend_op(void* cptr, unsigned op);
+void n_drawcall_set_src_alpha_blend_factor(void* cptr, unsigned factor);
+void n_drawcall_set_dst_alpha_blend_factor(void* cptr, unsigned factor);
+void n_drawcall_set_alpha_blend_op(void* cptr, unsigned op);
+
+void n_drawcall_set_blend_constants(void* cptr, float r, float g, float b, float a);
+
+void n_drawcall_set_ith_color_write(void* cptr, int i, unsigned enable);
+void n_drawcall_set_ith_color_write_r(void* cptr, int i, unsigned enable);
+void n_drawcall_set_ith_color_write_g(void* cptr, int i, unsigned enable);
+void n_drawcall_set_ith_color_write_b(void* cptr, int i, unsigned enable);
+void n_drawcall_set_ith_alpha_write(void* cptr, int i, unsigned enable);
+void n_drawcall_set_ith_blend_enable(void* cptr, int i, unsigned enable);
+void n_drawcall_set_ith_src_color_blend_factor(void* cptr, int i, unsigned factor);
+void n_drawcall_set_ith_dst_color_blend_factor(void* cptr, int i, unsigned factor);
+void n_drawcall_set_ith_color_blend_op(void* cptr, int i, unsigned op);
+void n_drawcall_set_ith_src_alpha_blend_factor(void* cptr, int i, unsigned factor);
+void n_drawcall_set_ith_dst_alpha_blend_factor(void* cptr, int i, unsigned factor);
+void n_drawcall_set_ith_alpha_blend_op(void* cptr, int i, unsigned op);
+
 void* n_rasterizer_create(void* ptr_param_list, unsigned type_locked);
 void n_rasterizer_destroy(void* cptr);
 int n_rasterizer_num_params(void* cptr);

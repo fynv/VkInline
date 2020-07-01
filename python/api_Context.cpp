@@ -151,11 +151,34 @@ void n_drawcall_set_depth_write(void* cptr, unsigned enable)
 	dc->set_depth_write(enable != 0);
 }
 
+void n_drawcall_set_depth_compare_op(void* cptr, unsigned op)
+{
+	DrawCall* dc = (DrawCall*)cptr;
+	dc->set_depth_comapre_op(op);
+}
 
 void n_drawcall_set_color_write(void* cptr, unsigned enable)
 {
 	DrawCall* dc = (DrawCall*)cptr;
 	dc->set_color_write(enable != 0);
+}
+
+void n_drawcall_set_color_write_r(void* cptr, unsigned enable)
+{
+	DrawCall* dc = (DrawCall*)cptr;
+	dc->set_color_write_r(enable != 0);
+}
+
+void n_drawcall_set_color_write_g(void* cptr, unsigned enable)
+{
+	DrawCall* dc = (DrawCall*)cptr;
+	dc->set_color_write_g(enable != 0);
+}
+
+void n_drawcall_set_color_write_b(void* cptr, unsigned enable)
+{
+	DrawCall* dc = (DrawCall*)cptr;
+	dc->set_color_write_b(enable != 0);
 }
 
 void n_drawcall_set_alpha_write(void* cptr, unsigned enable)
@@ -164,16 +187,124 @@ void n_drawcall_set_alpha_write(void* cptr, unsigned enable)
 	dc->set_alpha_write(enable != 0);
 }
 
-void n_drawcall_set_alpha_blend(void* cptr, unsigned enable)
+void n_drawcall_set_blend_enable(void* cptr, unsigned enable)
 {
 	DrawCall* dc = (DrawCall*)cptr;
-	dc->set_alpha_blend(enable != 0);
+	dc->set_blend_enable(enable != 0);
 }
 
-void n_drawcall_set_depth_compare_op(void* cptr, unsigned op)
+void n_drawcall_set_src_color_blend_factor(void* cptr, unsigned factor)
 {
 	DrawCall* dc = (DrawCall*)cptr;
-	dc->set_depth_comapre_op(op);
+	dc->set_src_color_blend_factor(factor);
+}
+
+void n_drawcall_set_dst_color_blend_factor(void* cptr, unsigned factor)
+{
+	DrawCall* dc = (DrawCall*)cptr;
+	dc->set_dst_color_blend_factor(factor);
+}
+
+void n_drawcall_set_color_blend_op(void* cptr, unsigned op)
+{
+	DrawCall* dc = (DrawCall*)cptr;
+	dc->set_color_blend_op(op);
+}
+
+void n_drawcall_set_src_alpha_blend_factor(void* cptr, unsigned factor)
+{
+	DrawCall* dc = (DrawCall*)cptr;
+	dc->set_src_alpha_blend_factor(factor);
+}
+
+void n_drawcall_set_dst_alpha_blend_factor(void* cptr, unsigned factor)
+{
+	DrawCall* dc = (DrawCall*)cptr;
+	dc->set_dst_alpha_blend_factor(factor);
+}
+
+void n_drawcall_set_alpha_blend_op(void* cptr, unsigned op)
+{
+	DrawCall* dc = (DrawCall*)cptr;
+	dc->set_alpha_blend_op(op);
+}
+
+void n_drawcall_set_blend_constants(void* cptr, float r, float g, float b, float a)
+{
+	DrawCall* dc = (DrawCall*)cptr;
+	dc->set_blend_constants(r, g, b, a);
+}
+
+void n_drawcall_set_ith_color_write(void* cptr, int i, unsigned enable)
+{
+	DrawCall* dc = (DrawCall*)cptr;
+	dc->set_ith_color_write(i, enable != 0);
+}
+
+void n_drawcall_set_ith_color_write_r(void* cptr, int i, unsigned enable)
+{
+	DrawCall* dc = (DrawCall*)cptr;
+	dc->set_ith_color_write_r(i, enable != 0);
+}
+
+void n_drawcall_set_ith_color_write_g(void* cptr, int i, unsigned enable)
+{
+	DrawCall* dc = (DrawCall*)cptr;
+	dc->set_ith_color_write_g(i, enable != 0);
+}
+
+void n_drawcall_set_ith_color_write_b(void* cptr, int i, unsigned enable)
+{
+	DrawCall* dc = (DrawCall*)cptr;
+	dc->set_ith_color_write_b(i, enable != 0);
+}
+
+void n_drawcall_set_ith_alpha_write(void* cptr, int i, unsigned enable)
+{
+	DrawCall* dc = (DrawCall*)cptr;
+	dc->set_ith_alpha_write(i, enable != 0);
+}
+
+void n_drawcall_set_ith_blend_enable(void* cptr, int i, unsigned enable)
+{
+	DrawCall* dc = (DrawCall*)cptr;
+	dc->set_ith_blend_enable(i, enable != 0);
+}
+
+void n_drawcall_set_ith_src_color_blend_factor(void* cptr, int i, unsigned factor)
+{
+	DrawCall* dc = (DrawCall*)cptr;
+	dc->set_ith_src_color_blend_factor(i, factor);
+}
+
+void n_drawcall_set_ith_dst_color_blend_factor(void* cptr, int i, unsigned factor)
+{
+	DrawCall* dc = (DrawCall*)cptr;
+	dc->set_ith_dst_color_blend_factor(i, factor);
+}
+
+void n_drawcall_set_ith_color_blend_op(void* cptr, int i, unsigned op)
+{
+	DrawCall* dc = (DrawCall*)cptr;
+	dc->set_ith_color_blend_op(i, op);
+}
+
+void n_drawcall_set_ith_src_alpha_blend_factor(void* cptr, int i, unsigned factor)
+{
+	DrawCall* dc = (DrawCall*)cptr;
+	dc->set_ith_src_alpha_blend_factor(i, factor);
+}
+
+void n_drawcall_set_ith_dst_alpha_blend_factor(void* cptr, int i, unsigned factor)
+{
+	DrawCall* dc = (DrawCall*)cptr;
+	dc->set_ith_dst_alpha_blend_factor(i, factor);
+}
+
+void n_drawcall_set_ith_alpha_blend_op(void* cptr, int i, unsigned op)
+{
+	DrawCall* dc = (DrawCall*)cptr;
+	dc->set_ith_alpha_blend_op(i, op);
 }
 
 void* n_rasterizer_create(void* ptr_param_list, unsigned type_locked)

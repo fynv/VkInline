@@ -677,7 +677,7 @@ namespace VkInline
 
 			sig.push_feature(&hash_vert[i], sizeof(unsigned long long));
 			sig.push_feature(&hash_frag[i], sizeof(unsigned long long));
-			const Internal::GraphicsPipelineStates& states = draw_calls[i]->get_states(color_attachmentInfo.size());
+			const Internal::GraphicsPipelineStates& states = draw_calls[i]->get_states((int)color_attachmentInfo.size());
 			sig.push_feature(&states.inputAssembly.flags, sizeof(VkPipelineInputAssemblyStateCreateInfo)-((char*)&states.inputAssembly.flags- (char*)&states.inputAssembly));
 			sig.push_feature(&states.rasterizer.flags, sizeof(VkPipelineRasterizationStateCreateInfo) - ((char*)&states.rasterizer.flags - (char*)&states.rasterizer));
 			for (size_t j = 0; j < color_attachmentInfo.size(); j++)
@@ -799,8 +799,8 @@ namespace VkInline
 			}
 			pipelineInfo[i].spv_vert = &spv_vert[i];
 			pipelineInfo[i].spv_frag = &spv_frag[i];
-			pipelineInfo[i].states = draw_calls[i]->get_states(color_attachmentInfo.size());
-			pipelineInfo[i].states.colorBlending.attachmentCount = color_attachmentInfo.size();
+			pipelineInfo[i].states = draw_calls[i]->get_states((int)color_attachmentInfo.size());
+			pipelineInfo[i].states.colorBlending.attachmentCount = (unsigned)color_attachmentInfo.size();
 		}
 
 		Internal::RenderPass* renderpass = new Internal::RenderPass(color_attachmentInfo, depth_attachmentInfo, resolve_attachmentInfo, pipelineInfo, num_tex2d, num_tex3d);

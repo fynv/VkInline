@@ -295,9 +295,17 @@ namespace VkInline
 		m_code_body_vert = code_body_vert;
 		m_code_body_frag = code_body_frag;
 
-		m_color_write = true;
+		m_color_write_r = true;
+		m_color_write_g = true;
+		m_color_write_b = true;
 		m_alpha_write = true;
-		m_alpha_blend = false;
+		m_blend_enable = false;
+		m_src_color_blend_factor = VK_BLEND_FACTOR_SRC_ALPHA;
+		m_dst_color_blend_factor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		m_color_blend_op = 0;
+		m_src_alpha_blend_factor = VK_BLEND_FACTOR_ONE;
+		m_dst_alpha_blend_factor = VK_BLEND_FACTOR_ZERO;
+		m_alpha_blend_op = 0;
 
 		m_states = new Internal::GraphicsPipelineStates;
 
@@ -370,24 +378,138 @@ namespace VkInline
 		m_states->depthStencil.depthCompareOp = (VkCompareOp)op;
 	}
 
+	void DrawCall::set_blend_constants(float r, float g, float b, float a)
+	{
+		m_states->colorBlending.blendConstants[0] = r;
+		m_states->colorBlending.blendConstants[1] = g;
+		m_states->colorBlending.blendConstants[2] = b;
+		m_states->colorBlending.blendConstants[3] = a;
+	}
+
 	void DrawCall::_resize_color_att(int num_color_att) const
 	{
 		VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
-		if (m_color_write)
-			colorBlendAttachment.colorWriteMask |= VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT;
+		if (m_color_write_r)
+			colorBlendAttachment.colorWriteMask |= VK_COLOR_COMPONENT_R_BIT;
+		if (m_color_write_g)
+			colorBlendAttachment.colorWriteMask |= VK_COLOR_COMPONENT_G_BIT;
+		if (m_color_write_b)
+			colorBlendAttachment.colorWriteMask |= VK_COLOR_COMPONENT_B_BIT;
 		if (m_alpha_write)
 			colorBlendAttachment.colorWriteMask |= VK_COLOR_COMPONENT_A_BIT;
-		if (m_alpha_blend)
+		if (m_blend_enable)
 		{
 			colorBlendAttachment.blendEnable = VK_TRUE;
-			colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-			colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-			colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-			colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+			colorBlendAttachment.srcColorBlendFactor = (VkBlendFactor)m_src_color_blend_factor;
+			colorBlendAttachment.dstColorBlendFactor = (VkBlendFactor)m_dst_color_blend_factor;
+			colorBlendAttachment.colorBlendOp = (VkBlendOp)m_color_blend_op;
+			colorBlendAttachment.srcAlphaBlendFactor = (VkBlendFactor)m_src_alpha_blend_factor;
+			colorBlendAttachment.dstAlphaBlendFactor = (VkBlendFactor)m_dst_alpha_blend_factor;
+			colorBlendAttachment.alphaBlendOp = (VkBlendOp)m_alpha_blend_op;
 		}
 		m_states->colorBlendAttachments.resize(num_color_att, colorBlendAttachment);
 		m_states->colorBlending.pAttachments = m_states->colorBlendAttachments.data();
 	}
+
+	void DrawCall::set_ith_color_write(int i, bool enable)
+	{
+		size_t cur_num_att = m_states->colorBlendAttachments.size();
+		if (i>=cur_num_att) _resize_color_att(i+1);
+		if (enable)
+			m_states->colorBlendAttachments[i].colorWriteMask |= (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT);
+		else
+			m_states->colorBlendAttachments[i].colorWriteMask &= ~(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT);
+	}
+
+	void DrawCall::set_ith_color_write_r(int i, bool enable)
+	{
+		size_t cur_num_att = m_states->colorBlendAttachments.size();
+		if (i >= cur_num_att) _resize_color_att(i + 1);
+		if (enable)
+			m_states->colorBlendAttachments[i].colorWriteMask |= VK_COLOR_COMPONENT_R_BIT;
+		else
+			m_states->colorBlendAttachments[i].colorWriteMask &= ~VK_COLOR_COMPONENT_R_BIT;
+	}
+
+	void DrawCall::set_ith_color_write_g(int i, bool enable)
+	{
+		size_t cur_num_att = m_states->colorBlendAttachments.size();
+		if (i >= cur_num_att) _resize_color_att(i + 1);
+		if (enable)
+			m_states->colorBlendAttachments[i].colorWriteMask |= VK_COLOR_COMPONENT_G_BIT;
+		else
+			m_states->colorBlendAttachments[i].colorWriteMask &= ~VK_COLOR_COMPONENT_G_BIT;
+	}
+
+	void DrawCall::set_ith_color_write_b(int i, bool enable)
+	{
+		size_t cur_num_att = m_states->colorBlendAttachments.size();
+		if (i >= cur_num_att) _resize_color_att(i + 1);
+		if (enable)
+			m_states->colorBlendAttachments[i].colorWriteMask |= VK_COLOR_COMPONENT_B_BIT;
+		else
+			m_states->colorBlendAttachments[i].colorWriteMask &= ~VK_COLOR_COMPONENT_B_BIT;
+	}
+
+	void DrawCall::set_ith_alpha_write(int i, bool enable)
+	{
+		size_t cur_num_att = m_states->colorBlendAttachments.size();
+		if (i >= cur_num_att) _resize_color_att(i + 1);
+		if (enable)
+			m_states->colorBlendAttachments[i].colorWriteMask |= VK_COLOR_COMPONENT_A_BIT;
+		else
+			m_states->colorBlendAttachments[i].colorWriteMask &= ~VK_COLOR_COMPONENT_A_BIT;
+	}
+
+	void DrawCall::set_ith_blend_enable(int i, bool enable)
+	{
+		size_t cur_num_att = m_states->colorBlendAttachments.size();
+		if (i >= cur_num_att) _resize_color_att(i + 1);
+		m_states->colorBlendAttachments[i].blendEnable = enable ? VK_TRUE : VK_FALSE;
+	}
+
+	void DrawCall::set_ith_src_color_blend_factor(int i, unsigned factor)
+	{
+		size_t cur_num_att = m_states->colorBlendAttachments.size();
+		if (i >= cur_num_att) _resize_color_att(i + 1);
+		m_states->colorBlendAttachments[i].srcColorBlendFactor = (VkBlendFactor)factor;
+	}
+
+	void DrawCall::set_ith_dst_color_blend_factor(int i, unsigned factor)
+	{
+		size_t cur_num_att = m_states->colorBlendAttachments.size();
+		if (i >= cur_num_att) _resize_color_att(i + 1);
+		m_states->colorBlendAttachments[i].dstColorBlendFactor = (VkBlendFactor)factor;
+	}
+
+	void DrawCall::set_ith_color_blend_op(int i, unsigned op)
+	{
+		size_t cur_num_att = m_states->colorBlendAttachments.size();
+		if (i >= cur_num_att) _resize_color_att(i + 1);
+		m_states->colorBlendAttachments[i].colorBlendOp = (VkBlendOp)op;
+	}
+
+	void DrawCall::set_ith_src_alpha_blend_factor(int i, unsigned factor)
+	{
+		size_t cur_num_att = m_states->colorBlendAttachments.size();
+		if (i >= cur_num_att) _resize_color_att(i + 1);
+		m_states->colorBlendAttachments[i].srcAlphaBlendFactor = (VkBlendFactor)factor;
+	}
+
+	void DrawCall::set_ith_dst_alpha_blend_factor(int i, unsigned factor)
+	{
+		size_t cur_num_att = m_states->colorBlendAttachments.size();
+		if (i >= cur_num_att) _resize_color_att(i + 1);
+		m_states->colorBlendAttachments[i].dstAlphaBlendFactor = (VkBlendFactor)factor;
+	}
+
+	void DrawCall::set_ith_alpha_blend_op(int i, unsigned op)
+	{
+		size_t cur_num_att = m_states->colorBlendAttachments.size();
+		if (i >= cur_num_att) _resize_color_att(i + 1);
+		m_states->colorBlendAttachments[i].alphaBlendOp = (VkBlendOp)op;
+	}
+
 
 	const Internal::GraphicsPipelineStates& DrawCall::get_states(int num_color_att) const
 	{

@@ -118,9 +118,33 @@ namespace VkInline
 		void set_depth_write(bool enable);
 		void set_depth_comapre_op(unsigned op);
 
-		void set_color_write(bool enable) { m_color_write = enable; }
+		void set_color_write(bool enable) { m_color_write_r = m_color_write_g = m_color_write_b = enable; }
+		void set_color_write_r(bool enable) { m_color_write_r = enable; }
+		void set_color_write_g(bool enable) { m_color_write_g = enable; }
+		void set_color_write_b(bool enable) { m_color_write_b = enable; }
 		void set_alpha_write(bool enable) { m_alpha_write = enable; }
-		void set_alpha_blend(bool enable) { m_alpha_blend = enable; }		
+		void set_blend_enable(bool enable) { m_blend_enable = enable; }
+		void set_src_color_blend_factor(unsigned factor) { m_src_color_blend_factor = factor; }
+		void set_dst_color_blend_factor(unsigned factor) { m_dst_color_blend_factor = factor; }
+		void set_color_blend_op(unsigned op) { m_color_blend_op = op; }
+		void set_src_alpha_blend_factor(unsigned factor) { m_src_alpha_blend_factor = factor; }
+		void set_dst_alpha_blend_factor(unsigned factor) { m_dst_alpha_blend_factor = factor; }
+		void set_alpha_blend_op(unsigned op) { m_alpha_blend_op = op; }
+
+		void set_blend_constants(float r, float g, float b, float a);
+
+		void set_ith_color_write(int i, bool enable);
+		void set_ith_color_write_r(int i, bool enable);
+		void set_ith_color_write_g(int i, bool enable);
+		void set_ith_color_write_b(int i, bool enable);
+		void set_ith_alpha_write(int i, bool enable);
+		void set_ith_blend_enable(int i, bool enable);
+		void set_ith_src_color_blend_factor(int i, unsigned factor);
+		void set_ith_dst_color_blend_factor(int i, unsigned factor);
+		void set_ith_color_blend_op(int i, unsigned op);
+		void set_ith_src_alpha_blend_factor(int i, unsigned factor);
+		void set_ith_dst_alpha_blend_factor(int i, unsigned factor);
+		void set_ith_alpha_blend_op(int i, unsigned op);
 
 		const char* code_body_vert() const { return m_code_body_vert.c_str(); }
 		const char* code_body_frag() const { return m_code_body_frag.c_str(); }
@@ -131,9 +155,17 @@ namespace VkInline
 		std::string m_code_body_vert;
 		std::string m_code_body_frag;
 
-		bool m_color_write;
+		bool m_color_write_r;
+		bool m_color_write_g;
+		bool m_color_write_b;
 		bool m_alpha_write;
-		bool m_alpha_blend;
+		bool m_blend_enable;
+		unsigned m_src_color_blend_factor;
+		unsigned m_dst_color_blend_factor;
+		unsigned m_color_blend_op;
+		unsigned m_src_alpha_blend_factor;
+		unsigned m_dst_alpha_blend_factor;
+		unsigned m_alpha_blend_op;
 
 		Internal::GraphicsPipelineStates* m_states;
 		mutable std::mutex m_mu_colorBlendAttachments;
