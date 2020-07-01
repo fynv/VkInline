@@ -335,6 +335,26 @@ namespace VkInline
 		m_states->inputAssembly.primitiveRestartEnable = enable ? VK_TRUE : VK_FALSE;
 	}
 
+	void DrawCall::set_polygon_mode(unsigned mode)
+	{
+		m_states->rasterizer.polygonMode = (VkPolygonMode)mode;
+	}
+
+	void DrawCall::set_cull_mode(unsigned mode)
+	{
+		m_states->rasterizer.cullMode = (VkCullModeFlags)mode;
+	}
+
+	void DrawCall::set_front_face(unsigned mode)
+	{
+		m_states->rasterizer.frontFace = (VkFrontFace)mode;
+	}
+
+	void DrawCall::set_line_width(float width)
+	{
+		m_states->rasterizer.lineWidth = width;
+	}
+
 	void DrawCall::set_depth_enable(bool enable)
 	{
 		m_states->depthStencil.depthTestEnable = enable ? VK_TRUE : VK_FALSE;

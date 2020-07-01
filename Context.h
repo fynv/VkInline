@@ -109,6 +109,11 @@ namespace VkInline
 		void set_primitive_topology(unsigned topo);
 		void set_primitive_restart(bool enable);
 
+		void set_polygon_mode(unsigned mode);
+		void set_cull_mode(unsigned mode);
+		void set_front_face(unsigned mode);
+		void set_line_width(float width);
+
 		void set_depth_enable(bool enable);
 		void set_depth_write(bool enable);
 		void set_depth_comapre_op(unsigned op);

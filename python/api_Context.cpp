@@ -109,13 +109,35 @@ void n_drawcall_set_primitive_topology(void* cptr, unsigned topo)
 	dc->set_primitive_topology(topo);
 }
 
-
 void n_drawcall_set_primitive_restart(void* cptr, unsigned enable)
 {
 	DrawCall* dc = (DrawCall*)cptr;
 	dc->set_primitive_restart(enable!=0);
 }
 
+void n_drawcall_set_polygon_mode(void* cptr, unsigned mode)
+{
+	DrawCall* dc = (DrawCall*)cptr;
+	dc->set_polygon_mode(mode);
+}
+
+void n_drawcall_set_cull_mode(void* cptr, unsigned mode)
+{
+	DrawCall* dc = (DrawCall*)cptr;
+	dc->set_cull_mode(mode);
+}
+
+void n_drawcall_set_front_face(void* cptr, unsigned mode)
+{
+	DrawCall* dc = (DrawCall*)cptr;
+	dc->set_front_face(mode);
+}
+
+void n_drawcall_set_line_width(void* cptr, float width)
+{
+	DrawCall* dc = (DrawCall*)cptr;
+	dc->set_line_width(width);
+}
 
 void n_drawcall_set_depth_enable(void* cptr, unsigned enable)
 {

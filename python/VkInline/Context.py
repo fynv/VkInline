@@ -113,6 +113,18 @@ class DrawCall:
         if 'primitive_restart' in options:
             native.n_drawcall_set_primitive_restart(self.m_cptr, options['primitive_restart'])        
 
+        if 'polygon_mode' in options:
+            native.n_drawcall_set_polygon_mode(self.m_cptr, options['polygon_mode']) 
+
+        if 'cull_mode' in options:
+            native.n_drawcall_set_cull_mode(self.m_cptr, options['cull_mode'])       
+            
+        if 'front_face' in options:
+            native.n_drawcall_set_front_face(self.m_cptr, options['front_face'])            
+            
+        if 'line_width' in options:
+            native.n_drawcall_set_line_width(self.m_cptr, options['line_width'])                           
+
         if 'depth_enable' in options:
             native.n_drawcall_set_depth_enable(self.m_cptr, options['depth_enable'])
 

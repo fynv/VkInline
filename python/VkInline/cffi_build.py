@@ -45,6 +45,10 @@ void n_drawcall_destroy(void* cptr);
 
 void n_drawcall_set_primitive_topology(void* cptr, unsigned topo);
 void n_drawcall_set_primitive_restart(void* cptr, unsigned enable);
+void n_drawcall_set_polygon_mode(void* cptr, unsigned mode);
+void n_drawcall_set_cull_mode(void* cptr, unsigned mode);
+void n_drawcall_set_front_face(void* cptr, unsigned mode);
+void n_drawcall_set_line_width(void* cptr, float width);
 
 void n_drawcall_set_depth_enable(void* cptr, unsigned enable);
 void n_drawcall_set_depth_write(void* cptr, unsigned enable);

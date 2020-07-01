@@ -46,6 +46,10 @@ extern "C"
 
 	PY_VkInline_API void n_drawcall_set_primitive_topology(void* cptr, unsigned topo);
 	PY_VkInline_API void n_drawcall_set_primitive_restart(void* cptr, unsigned enable);
+	PY_VkInline_API void n_drawcall_set_polygon_mode(void* cptr, unsigned mode);
+	PY_VkInline_API void n_drawcall_set_cull_mode(void* cptr, unsigned mode);
+	PY_VkInline_API void n_drawcall_set_front_face(void* cptr, unsigned mode);
+	PY_VkInline_API void n_drawcall_set_line_width(void* cptr, float width);
 	
 	PY_VkInline_API void n_drawcall_set_depth_enable(void* cptr, unsigned enable);
 	PY_VkInline_API void n_drawcall_set_depth_write(void* cptr, unsigned enable);
