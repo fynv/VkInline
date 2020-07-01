@@ -1,6 +1,7 @@
 #include <memory.h>
 #include "internal_context.h"
 #include "SVObjBuffer.h"
+#include "Context.h"
 
 namespace VkInline
 {

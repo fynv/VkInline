@@ -812,7 +812,7 @@ namespace VkInline
 	}
 
 	bool Context::launch_rasterization(Texture2D* const* colorBufs, Texture2D* depthBuf, Texture2D* const* resolveBufs, float* clear_colors, float clear_depth,
-		size_t num_params, const ShaderViewable** args, Texture2D* const* tex2ds, Texture3D* const* tex3ds, unsigned* vertex_counts, unsigned rpid, const size_t* offsets)
+		size_t num_params, const ShaderViewable** args, Texture2D* const* tex2ds, Texture3D* const* tex3ds, Rasterizer::LaunchParam** launch_params, unsigned rpid, const size_t* offsets)
 	{
 		Internal::RenderPass* renderpass;
 		{
@@ -858,8 +858,15 @@ namespace VkInline
 		std::vector<Internal::Texture3D*> i_tex3ds(renderpass->num_tex3d());
 		for (size_t i = 0; i < i_tex3ds.size(); i++)
 			i_tex3ds[i] = tex3ds[i]->internal();
-
-		cmdBuf->draw(tex_colorBufs.data(), tex_depthBuf, tex_resolveBufs.data(), clear_colors, clear_depth, h_uniform.data(), i_tex2ds.data(), i_tex3ds.data(), vertex_counts);
+		
+		std::vector<Internal::RenderPassCommandBuffer::DrawParam> dps(renderpass->num_pipelines()); 
+		for (size_t i = 0; i < renderpass->num_pipelines(); i++)
+		{
+			dps[i].count = launch_params[i]->count;
+			dps[i].indBuf = launch_params[i]->indBuf != nullptr ? launch_params[i]->indBuf->internal() : nullptr;
+		}
+			 
+		cmdBuf->draw(tex_colorBufs.data(), tex_depthBuf, tex_resolveBufs.data(), clear_colors, clear_depth, h_uniform.data(), i_tex2ds.data(), i_tex3ds.data(), dps.data());
 
 		const Internal::Context* ctx = Internal::Context::get_context();
 		ctx->SubmitCommandBuffer(cmdBuf);
@@ -868,7 +875,7 @@ namespace VkInline
 	}
 
 	bool Context::launch_rasterization(const std::vector<Attachement>& colorBufs, Attachement depthBuf, const std::vector<Attachement>& resolveBufs, float* clear_colors, float clear_depth,
-		const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, const std::vector<const DrawCall*>& draw_calls, unsigned* vertex_counts)
+		const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, const std::vector<const DrawCall*>& draw_calls, Rasterizer::LaunchParam** launch_params)
 	{
 		std::vector <Internal::AttachmentInfo> color_attachmentInfo(colorBufs.size());
 		std::vector <Texture2D*> tex_colorBufs(colorBufs.size());
@@ -934,11 +941,11 @@ namespace VkInline
 			args[i] = arg_map[i].obj;
 		}
 
-		return launch_rasterization(tex_colorBufs.data(), tex_depthBuf, tex_resolveBufs.data(), clear_colors, clear_depth, arg_map.size(), args.data(), tex2ds.data(), tex3ds.data(), vertex_counts, rpid, offsets.data());
+		return launch_rasterization(tex_colorBufs.data(), tex_depthBuf, tex_resolveBufs.data(), clear_colors, clear_depth, arg_map.size(), args.data(), tex2ds.data(), tex3ds.data(), launch_params, rpid, offsets.data());
 	}
 
 	bool Context::launch_rasterization(const std::vector<Attachement>& colorBufs, Attachement depthBuf, const std::vector<Attachement>& resolveBufs, float* clear_colors, float clear_depth,
-		const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, const std::vector<const DrawCall*>& draw_calls, unsigned* vertex_counts, unsigned& rpid, size_t* offsets)
+		const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, const std::vector<const DrawCall*>& draw_calls, Rasterizer::LaunchParam** launch_params, unsigned& rpid, size_t* offsets)
 	{
 		std::vector <Internal::AttachmentInfo> color_attachmentInfo(colorBufs.size());
 		std::vector <Texture2D*> tex_colorBufs(colorBufs.size());
@@ -1003,7 +1010,7 @@ namespace VkInline
 			args[i] = arg_map[i].obj;
 		}
 
-		return launch_rasterization(tex_colorBufs.data(), tex_depthBuf, tex_resolveBufs.data(), clear_colors, clear_depth, arg_map.size(), args.data(), tex2ds.data(), tex3ds.data(), vertex_counts, rpid, offsets);
+		return launch_rasterization(tex_colorBufs.data(), tex_depthBuf, tex_resolveBufs.data(), clear_colors, clear_depth, arg_map.size(), args.data(), tex2ds.data(), tex3ds.data(), launch_params, rpid, offsets);
 	}
 }
 

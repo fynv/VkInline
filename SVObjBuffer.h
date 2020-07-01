@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ShaderViewable.h"
-#include "Context.h"
 
 namespace VkInline
 {

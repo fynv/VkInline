@@ -360,9 +360,15 @@ namespace VkInline
 			RenderPassCommandBuffer(const RenderPass* render_pass, size_t ubo_size);
 			~RenderPassCommandBuffer();
 
+			struct DrawParam
+			{
+				unsigned count;
+				Buffer* indBuf;
+			};
+
 			virtual void Recycle();
 			void draw(Texture2D** colorBufs, Texture2D* depthBuf, Texture2D** resolveBufs, float* clear_colors, float clear_depth,
-				void* param_data, Texture2D** tex2ds, Texture3D** tex3ds, unsigned* vertex_counts);
+				void* param_data, Texture2D** tex2ds, Texture3D** tex3ds, DrawParam* draw_params);
 			
 		private:
 			const RenderPass* m_render_pass;

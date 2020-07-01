@@ -1,4 +1,5 @@
 from .Native import ffi,native
+import numbers
 
 class StrArray:
     def __init__(self, arr):
@@ -57,3 +58,15 @@ class Texture3DArray:
 
     def size(self):
         return native.n_tex3d_array_size(self.m_cptr)
+
+class LaunchParam:
+    def __init__(self, obj):
+        if isinstance(obj, numbers.Number):            
+            self.m_cptr = native.n_launch_param_from_count(obj)
+        else:
+            self.m_buf = obj.m_buf
+            self.m_cptr = native.n_launch_param_from_buffer(obj.m_buf.m_cptr)
+
+    def __del__(self):
+        native.n_launch_param_destroy(self.m_cptr)
+

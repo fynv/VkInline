@@ -1,4 +1,5 @@
 #include "Context.h"
+#include "SVBuffer.h"
 #include "internal_context.h"
 #include <unordered_map>
 #include <unordered_set>
@@ -28,11 +29,11 @@ namespace VkInline
 		bool launch_compute(dim_type gridDim, dim_type blockDim, const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, const char* code_body, unsigned& kid, size_t* offsets);
 
 		bool launch_rasterization(Texture2D* const * colorBufs, Texture2D* depthBuf, Texture2D* const* resolveBufs, float* clear_colors, float clear_depth,
-			size_t num_params, const ShaderViewable** args, Texture2D* const* tex2ds, Texture3D* const* tex3ds, unsigned* vertex_counts, unsigned rpid, const size_t* offsets);
+			size_t num_params, const ShaderViewable** args, Texture2D* const* tex2ds, Texture3D* const* tex3ds, Rasterizer::LaunchParam** launch_params, unsigned rpid, const size_t* offsets);
 		bool launch_rasterization(const std::vector<Attachement>& colorBufs, Attachement depthBuf, const std::vector<Attachement>& resolveBufs, float* clear_colors, float clear_depth,
-			const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, const std::vector<const DrawCall*>& draw_calls, unsigned* vertex_counts);
+			const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, const std::vector<const DrawCall*>& draw_calls, Rasterizer::LaunchParam** launch_params);
 		bool launch_rasterization(const std::vector<Attachement>& colorBufs, Attachement depthBuf, const std::vector<Attachement>& resolveBufs, float* clear_colors, float clear_depth,
-			const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, const std::vector<const DrawCall*>& draw_calls, unsigned* vertex_counts, unsigned& rpid, size_t* offsets);
+			const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, const std::vector<const DrawCall*>& draw_calls, Rasterizer::LaunchParam** launch_params, unsigned& rpid, size_t* offsets);
 
 		void add_built_in_header(const char* name, const char* content);
 		void add_code_block(const char* code);
@@ -324,6 +325,16 @@ namespace VkInline
 		delete m_states;
 	}
 
+	void DrawCall::set_primitive_topology(unsigned topo)
+	{
+		m_states->inputAssembly.topology = (VkPrimitiveTopology)topo;
+	}
+
+	void DrawCall::set_primitive_restart(bool enable)
+	{
+		m_states->inputAssembly.primitiveRestartEnable = enable ? VK_TRUE : VK_FALSE;
+	}
+
 	void DrawCall::set_depth_enable(bool enable)
 	{
 		m_states->depthStencil.depthTestEnable = enable ? VK_TRUE : VK_FALSE;
@@ -397,7 +408,7 @@ namespace VkInline
 	}
 
 	bool Rasterizer::launch(const std::vector<Texture2D*>&  colorBufs, Texture2D* depthBuf, const std::vector<Texture2D*>& resolveBufs, float* clear_colors, float clear_depth,
-		const ShaderViewable** args, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, unsigned* vertex_counts)
+		const ShaderViewable** args, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, Rasterizer::LaunchParam** launch_params)
 	{
 		Context& ctx = Context::get_context();
 		if (!m_type_locked)
@@ -425,7 +436,7 @@ namespace VkInline
 				arg_map[i].obj = args[i];
 			}
 
-			return ctx.launch_rasterization(color_att, depth_att, resolve_att, clear_colors, clear_depth, arg_map, tex2ds, tex3ds, m_draw_calls, vertex_counts);
+			return ctx.launch_rasterization(color_att, depth_att, resolve_att, clear_colors, clear_depth, arg_map, tex2ds, tex3ds, m_draw_calls, launch_params);
 		}
 		else
 		{
@@ -455,12 +466,12 @@ namespace VkInline
 					arg_map[i].obj = args[i];
 				}
 				m_offsets.resize(m_param_names.size() + 1);
-				return ctx.launch_rasterization(color_att, depth_att, resolve_att, clear_colors, clear_depth, arg_map, tex2ds, tex3ds, m_draw_calls, vertex_counts, m_rpid, m_offsets.data());
+				return ctx.launch_rasterization(color_att, depth_att, resolve_att, clear_colors, clear_depth, arg_map, tex2ds, tex3ds, m_draw_calls, launch_params, m_rpid, m_offsets.data());
 			}
 			else
 			{
 				locker.unlock();
-				return ctx.launch_rasterization(colorBufs.data(), depthBuf, resolveBufs.data(), clear_colors, clear_depth, m_param_names.size(), args, tex2ds.data(), tex3ds.data(), vertex_counts, m_rpid, m_offsets.data());
+				return ctx.launch_rasterization(colorBufs.data(), depthBuf, resolveBufs.data(), clear_colors, clear_depth, m_param_names.size(), args, tex2ds.data(), tex3ds.data(), launch_params, m_rpid, m_offsets.data());
 			}
 		}
 	

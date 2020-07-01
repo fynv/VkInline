@@ -1,5 +1,7 @@
 #include "internal_context.h"
 #include "SVBuffer.h"
+#include "Context.h"
+
 namespace VkInline
 {
 	SVBuffer::SVBuffer(const char* elem_type, size_t size, void* hdata)
@@ -20,7 +22,7 @@ namespace VkInline
 			"};\n";
 
 		m_name_view_type = std::string("Buf_") + Add_Dynamic_Code(code.c_str());
-		m_data = new Internal::DeviceBuffer(m_elem_size*m_size, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+		m_data = new Internal::DeviceBuffer(m_elem_size*m_size, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
 		if (hdata != nullptr)
 			m_data->upload(hdata);
 		else

@@ -1575,7 +1575,7 @@ namespace VkInline
 		}
 
 		void RenderPassCommandBuffer::draw(Texture2D** colorBufs, Texture2D* depthBuf, Texture2D** resolveBufs, float* clear_colors, float clear_depth,
-			void* param_data, Texture2D** tex2ds, Texture3D** tex3ds, unsigned* vertex_counts)
+			void* param_data, Texture2D** tex2ds, Texture3D** tex3ds, DrawParam* draw_params)
 		{
 
 			const Context* ctx = Context::get_context();
@@ -1715,7 +1715,15 @@ namespace VkInline
 				vkCmdSetViewport(m_buf, 0, 1, &viewport);
 				vkCmdSetScissor(m_buf, 0, 1, &scissor);
 				vkCmdBindDescriptorSets(m_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, m_render_pass->layout_pipeline(), 0, 1, &m_descriptorSet, 0, nullptr);
-				vkCmdDraw(m_buf, vertex_counts[i], 1, 0, 0);
+				if (draw_params[i].indBuf == nullptr)
+				{
+					vkCmdDraw(m_buf, draw_params[i].count, 1, 0, 0);
+				}
+				else
+				{
+					vkCmdBindIndexBuffer(m_buf, draw_params[i].indBuf->buf(), 0, VK_INDEX_TYPE_UINT32);
+					vkCmdDrawIndexed(m_buf, draw_params[i].count, 1, 0, 0, 0);
+				}
 			}
 
 			for (size_t i = 0; i < m_render_pass->num_resolve_attachments(); i++)

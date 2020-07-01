@@ -1,6 +1,7 @@
 #include "api.h"
 #include "Context.h"
 #include "ShaderViewable.h"
+#include "SVBuffer.h"
 using namespace VkInline;
 #include <string>
 #include <vector>
@@ -99,4 +100,21 @@ void n_tex3d_array_destroy(void* ptr_arr)
 	Tex3DArray* arr = (Tex3DArray*)ptr_arr;
 	delete arr;
 }
+
+void* n_launch_param_from_count(unsigned count)
+{
+	return new Rasterizer::LaunchParam({ count, nullptr });
+}
+
+void* n_launch_param_from_buffer(void* _buf)
+{
+	SVBuffer* buf = (SVBuffer*)_buf;
+	return new Rasterizer::LaunchParam({ (unsigned)buf->size(), buf });
+}
+
+void n_launch_param_destroy(void* lp)
+{
+	delete (Rasterizer::LaunchParam*)lp;
+}
+
 

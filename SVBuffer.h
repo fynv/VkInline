@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ShaderViewable.h"
-#include "Context.h"
 
 namespace VkInline
 {
@@ -16,6 +15,8 @@ namespace VkInline
 		const std::string& name_elem_type() const { return m_elem_type; }
 		size_t elem_size() const { return m_elem_size; }
 		size_t size() const { return m_size; }
+		Internal::DeviceBuffer* internal() { return m_data; }
+		const Internal::DeviceBuffer* internal() const { return m_data; }
 
 		SVBuffer(const char* elem_type, size_t size, void* hdata = nullptr);
 		~SVBuffer();

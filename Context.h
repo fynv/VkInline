@@ -106,6 +106,9 @@ namespace VkInline
 		DrawCall(const char* code_body_vert, const char* code_body_frag);
 		~DrawCall();
 
+		void set_primitive_topology(unsigned topo);
+		void set_primitive_restart(bool enable);
+
 		void set_depth_enable(bool enable);
 		void set_depth_write(bool enable);
 		void set_depth_comapre_op(unsigned op);
@@ -133,6 +136,8 @@ namespace VkInline
 
 	};
 
+	class SVBuffer;
+
 	class Rasterizer
 	{
 	public:
@@ -143,8 +148,15 @@ namespace VkInline
 		void set_clear_depth_buf(bool clear);
 
 		void add_draw_call(const DrawCall* draw_call);
+
+		struct LaunchParam
+		{
+			unsigned count;
+			SVBuffer* indBuf;
+		};
+
 		bool launch(const std::vector<Texture2D*>& colorBufs, Texture2D* depthBuf, const std::vector<Texture2D*>& resolveBufs, float* clear_colors, float clear_depth,
-			const ShaderViewable** args, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, unsigned* vertex_counts);
+			const ShaderViewable** args, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, Rasterizer::LaunchParam** launch_params);
 
 	private:
 		std::vector<std::string> m_param_names;

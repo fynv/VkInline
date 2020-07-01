@@ -107,6 +107,12 @@ class DrawCall:
     def __init__(self, code_body_vert, code_body_frag, options={}):
         self.m_cptr = native.n_drawcall_create(code_body_vert.encode('utf-8'), code_body_frag.encode('utf-8'))
 
+        if 'primitive_topology' in options:
+            native.n_drawcall_set_primitive_topology(self.m_cptr, options['primitive_topology'])
+
+        if 'primitive_restart' in options:
+            native.n_drawcall_set_primitive_restart(self.m_cptr, options['primitive_restart'])        
+
         if 'depth_enable' in options:
             native.n_drawcall_set_depth_enable(self.m_cptr, options['depth_enable'])
 
@@ -151,7 +157,7 @@ class Rasterizer:
         self.m_draw_calls += [draw_call]
         native.n_rasterizer_add_draw_call(self.m_cptr, draw_call.m_cptr)
 
-    def launch(self, vertex_counts, colorBufs, depthBuf, clear_colors, clear_depth, args, tex2ds=[], tex3ds=[], resolveBufs=[]):
+    def launch(self, launch_params, colorBufs, depthBuf, clear_colors, clear_depth, args, tex2ds=[], tex3ds=[], resolveBufs=[]):
         colorBuf_list = Texture2DArray(colorBufs)
         p_depthBuf = ffi.NULL
         if depthBuf!=None:
@@ -160,7 +166,9 @@ class Rasterizer:
         arg_list = ObjArray(args)
         tex2d_list = Texture2DArray(tex2ds)
         tex3d_list = Texture3DArray(tex3ds)
-        native.n_rasterizer_launch(self.m_cptr, colorBuf_list.m_cptr, p_depthBuf, resolveBuf_list.m_cptr, clear_colors, clear_depth, arg_list.m_cptr, tex2d_list.m_cptr, tex3d_list.m_cptr, vertex_counts)
+        launch_param_list = [LaunchParam(obj) for obj in launch_params]
+        ptrs_launch_param_list = [lp.m_cptr for lp in launch_param_list]
+        native.n_rasterizer_launch(self.m_cptr, colorBuf_list.m_cptr, p_depthBuf, resolveBuf_list.m_cptr, clear_colors, clear_depth, arg_list.m_cptr, tex2d_list.m_cptr, tex3d_list.m_cptr, ptrs_launch_param_list)
 
 
 

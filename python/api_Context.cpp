@@ -103,6 +103,20 @@ void n_drawcall_destroy(void* cptr)
 	delete (DrawCall*)cptr;
 }
 
+void n_drawcall_set_primitive_topology(void* cptr, unsigned topo)
+{
+	DrawCall* dc = (DrawCall*)cptr;
+	dc->set_primitive_topology(topo);
+}
+
+
+void n_drawcall_set_primitive_restart(void* cptr, unsigned enable)
+{
+	DrawCall* dc = (DrawCall*)cptr;
+	dc->set_primitive_restart(enable!=0);
+}
+
+
 void n_drawcall_set_depth_enable(void* cptr, unsigned enable)
 {
 	DrawCall* dc = (DrawCall*)cptr;
@@ -183,7 +197,7 @@ void n_rasterizer_add_draw_call(void* cptr, void* draw_call)
 }
 
 int n_rasterizer_launch(void* cptr, void* ptr_colorBufs, void* _depthBuf, void* ptr_resolveBufs, 
-	float* clear_colors, float clear_depth,	void* ptr_arg_list, void* ptr_tex2d_list, void* ptr_tex3d_list, unsigned* vertex_counts)
+	float* clear_colors, float clear_depth,	void* ptr_arg_list, void* ptr_tex2d_list, void* ptr_tex3d_list, void** ptr_launch_params)
 {
 	Rasterizer* rasterizer = (Rasterizer*)cptr;
 	Tex2DArray* colorBufs = (Tex2DArray*)ptr_colorBufs;
@@ -192,8 +206,9 @@ int n_rasterizer_launch(void* cptr, void* ptr_colorBufs, void* _depthBuf, void* 
 	PtrArray* arg_list = (PtrArray*)ptr_arg_list;
 	Tex2DArray* tex2d_list = (Tex2DArray*)ptr_tex2d_list;
 	Tex3DArray* tex3d_list = (Tex3DArray*)ptr_tex3d_list;
+	Rasterizer::LaunchParam** launch_params = (Rasterizer::LaunchParam**)ptr_launch_params;
 
-	if (rasterizer->launch(*colorBufs, depthBuf, *resolveBufs, clear_colors, clear_depth, arg_list->data(), *tex2d_list, *tex3d_list, vertex_counts))
+	if (rasterizer->launch(*colorBufs, depthBuf, *resolveBufs, clear_colors, clear_depth, arg_list->data(), *tex2d_list, *tex3d_list, launch_params))
 		return 0;
 	else
 		return -1;

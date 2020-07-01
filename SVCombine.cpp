@@ -1,5 +1,6 @@
 #include <memory.h>
 #include "SVCombine.h"
+#include "Context.h"
 
 namespace VkInline
 {

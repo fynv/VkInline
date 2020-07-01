@@ -23,6 +23,9 @@ extern "C"
 	PY_VkInline_API void *n_tex3d_array_create(unsigned long long size, void** ptrs);
 	PY_VkInline_API unsigned long long n_tex3d_array_size(void* ptr_arr);
 	PY_VkInline_API void n_tex3d_array_destroy(void* ptr_arr);
+	PY_VkInline_API void* n_launch_param_from_count(unsigned count);
+	PY_VkInline_API void* n_launch_param_from_buffer(void* buf);
+	PY_VkInline_API void n_launch_param_destroy(void* lp);
 
 	// Context
 	PY_VkInline_API int n_vkinline_try_init();
@@ -40,6 +43,9 @@ extern "C"
 
 	PY_VkInline_API void* n_drawcall_create(const char* code_body_vert, const char* code_body_frag);
 	PY_VkInline_API void n_drawcall_destroy(void* cptr);
+
+	PY_VkInline_API void n_drawcall_set_primitive_topology(void* cptr, unsigned topo);
+	PY_VkInline_API void n_drawcall_set_primitive_restart(void* cptr, unsigned enable);
 	
 	PY_VkInline_API void n_drawcall_set_depth_enable(void* cptr, unsigned enable);
 	PY_VkInline_API void n_drawcall_set_depth_write(void* cptr, unsigned enable);
@@ -55,7 +61,7 @@ extern "C"
 	PY_VkInline_API void n_rasterizer_set_clear_depth_buf(void* cptr, unsigned clear);
 	PY_VkInline_API void n_rasterizer_add_draw_call(void* cptr, void* draw_call);
 	PY_VkInline_API int n_rasterizer_launch(void* cptr, void* ptr_colorBufs, void* _depthBuf, void* ptr_resolveBufs, 
-		float* clear_colors, float clear_depth,	void* ptr_arg_list, void* ptr_tex2d_list, void* ptr_tex3d_list, unsigned* vertex_counts);
+		float* clear_colors, float clear_depth,	void* ptr_arg_list, void* ptr_tex2d_list, void* ptr_tex3d_list, void** ptr_launch_params);
 
 	// ShaderViewable
 	PY_VkInline_API const char* n_sv_name_view_type(void* cptr);
