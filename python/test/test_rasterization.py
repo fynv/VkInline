@@ -20,6 +20,9 @@ gpuPos = vki.device_vector_from_numpy(positions)
 colors =  np.array([ [0.0, 1.0, 0.0], [1.0, 0.0, 0.0], [0.0, 0.0, 1.0]], dtype = np.float32)
 gpuColors = vki.device_vector_from_numpy(colors)
 
+indices = np.array([0, 1, 2], dtype = np.uint32)
+gpuIndices = vki.device_vector_from_numpy(indices)
+
 rp = vki.Rasterizer(['pos', 'col'])
 
 rp.add_draw_call(vki.DrawCall(
@@ -63,7 +66,7 @@ void main()
 '''))
 
 
-rp.launch([3, 3], [colorBuf], None, [0.5, 0.5, 0.5, 1.0], 1.0, [gpuPos, gpuColors], [tex2d])
+rp.launch([3, gpuIndices], [colorBuf], None, [0.5, 0.5, 0.5, 1.0], 1.0, [gpuPos, gpuColors], [tex2d])
 
 
 image_out = np.empty((height, width, 4), dtype=np.uint8)
