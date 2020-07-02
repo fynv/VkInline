@@ -122,8 +122,6 @@ The code generates the following image:
 
 <img src="doc/rasterization_result.png" width="640px">
 
-I will work on to expose more of the rasterization functionalities, and may start to expose the ray-tracing functionalities at some point.
-
 ## Installation
 
 ### Install from Source Code
