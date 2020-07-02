@@ -1721,7 +1721,7 @@ namespace VkInline
 				}
 				else
 				{
-					vkCmdBindIndexBuffer(m_buf, draw_params[i].indBuf->buf(), 0, VK_INDEX_TYPE_UINT32);
+					vkCmdBindIndexBuffer(m_buf, draw_params[i].indBuf->buf(), 0, draw_params[i].indType);
 					vkCmdDrawIndexed(m_buf, draw_params[i].count, 1, 0, 0, 0);
 				}
 			}

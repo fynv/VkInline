@@ -863,7 +863,14 @@ namespace VkInline
 		for (size_t i = 0; i < renderpass->num_pipelines(); i++)
 		{
 			dps[i].count = launch_params[i]->count;
-			dps[i].indBuf = launch_params[i]->indBuf != nullptr ? launch_params[i]->indBuf->internal() : nullptr;
+			dps[i].indType = VK_INDEX_TYPE_UINT16;
+			dps[i].indBuf = nullptr;  
+			if (launch_params[i]->indBuf != nullptr)
+			{
+				if (launch_params[i]->indBuf->elem_size()>2)
+					dps[i].indType = VK_INDEX_TYPE_UINT32;
+				dps[i].indBuf = launch_params[i]->indBuf->internal();
+			}
 		}
 			 
 		cmdBuf->draw(tex_colorBufs.data(), tex_depthBuf, tex_resolveBufs.data(), clear_colors, clear_depth, h_uniform.data(), i_tex2ds.data(), i_tex3ds.data(), dps.data());

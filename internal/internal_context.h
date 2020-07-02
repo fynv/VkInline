@@ -363,6 +363,7 @@ namespace VkInline
 			struct DrawParam
 			{
 				unsigned count;
+				VkIndexType indType;
 				Buffer* indBuf;
 			};
 
