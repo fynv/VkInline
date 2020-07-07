@@ -392,10 +392,8 @@ namespace VkInline
 			bufAdrInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
 			bufAdrInfo.buffer = m_buf;
 #ifndef _VkInlineEX
-			printf("vkGetBufferDeviceAddressEXT\n");
 			return vkGetBufferDeviceAddressEXT(ctx->device(), &bufAdrInfo);
 #else
-			printf("vkGetBufferDeviceAddressKHR\n");
 			return vkGetBufferDeviceAddressKHR(ctx->device(), &bufAdrInfo);
 #endif
 		}
