@@ -23,6 +23,10 @@ namespace VkInline
 			const VkPhysicalDevice& physicalDevice() const { return m_physicalDevice; }
 			const VkDevice& device() const { return m_device; }
 
+#ifdef _VkInlineEX
+			const VkPhysicalDeviceRayTracingPropertiesKHR& raytracing_properties()  const { return m_raytracingProperties; }
+#endif
+
 			struct Stream
 			{
 				VkCommandPool m_commandPool;
@@ -44,6 +48,8 @@ namespace VkInline
 			VkPhysicalDeviceBufferDeviceAddressFeaturesEXT m_bufferDeviceAddressFeatures;
 #else
 			VkPhysicalDeviceBufferDeviceAddressFeatures m_bufferDeviceAddressFeatures;
+			VkPhysicalDeviceRayTracingFeaturesKHR m_raytracingFeatures;
+			VkPhysicalDeviceRayTracingPropertiesKHR m_raytracingProperties;
 #endif
 			VkPhysicalDeviceDescriptorIndexingFeatures m_descriptorIndexingFeatures;
 			VkPhysicalDeviceScalarBlockLayoutFeatures m_scalarBlockLayoutFeatures;

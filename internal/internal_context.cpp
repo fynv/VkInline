@@ -128,11 +128,30 @@ namespace VkInline
 				m_descriptorIndexingFeatures.pNext = &m_scalarBlockLayoutFeatures;
 				m_scalarBlockLayoutFeatures = {};
 				m_scalarBlockLayoutFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT;
+
+#ifdef _VkInlineEX
+				m_scalarBlockLayoutFeatures.pNext = &m_raytracingFeatures;
+				m_raytracingFeatures = {};
+				m_raytracingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_FEATURES_KHR;
+#endif
+
 				m_features2 = {};
 				m_features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 				m_features2.pNext = &m_bufferDeviceAddressFeatures;
 				vkGetPhysicalDeviceFeatures2(m_physicalDevice, &m_features2);
 			}
+
+
+#ifdef _VkInlineEX
+			{
+				m_raytracingProperties = {};
+				m_raytracingProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PROPERTIES_KHR;
+				VkPhysicalDeviceProperties2 props = {};
+				props.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+				props.pNext = &m_raytracingProperties;
+				vkGetPhysicalDeviceProperties2(m_physicalDevice, &props);
+			}
+#endif
 
 			m_queueFamily = (uint32_t)(-1);
 			{
@@ -159,7 +178,11 @@ namespace VkInline
 #ifndef _VkInlineEX
 					VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
 #else
+					VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME,
 					VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+					VK_KHR_RAY_TRACING_EXTENSION_NAME,
+					VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+					VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME,
 #endif
 					VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
 					VK_EXT_SCALAR_BLOCK_LAYOUT_EXTENSION_NAME
@@ -178,7 +201,7 @@ namespace VkInline
 #ifndef _VkInlineEX
 					printf("Failed to create vulkan device\n");
 #else
-					printf("Failed to create vulkan device. (Vulkan 1.2 not supported, trying Vulkan 1.1.)\n");
+					printf("Failed to create vulkan device. (VK_KHR_ray_tracing not supported, switching to Vulkan 1.1.)\n");
 #endif
 					return false;
 				}
@@ -193,7 +216,6 @@ namespace VkInline
 		Context::Context()
 		{
 			m_is_valid = _init_vulkan();
-			if (!m_is_valid) return;
 		}
 
 		Context::~Context()
@@ -370,8 +392,10 @@ namespace VkInline
 			bufAdrInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
 			bufAdrInfo.buffer = m_buf;
 #ifndef _VkInlineEX
+			printf("vkGetBufferDeviceAddressEXT\n");
 			return vkGetBufferDeviceAddressEXT(ctx->device(), &bufAdrInfo);
 #else
+			printf("vkGetBufferDeviceAddressKHR\n");
 			return vkGetBufferDeviceAddressKHR(ctx->device(), &bufAdrInfo);
 #endif
 		}

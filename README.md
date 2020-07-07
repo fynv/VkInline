@@ -123,6 +123,10 @@ The code generates the following image:
 
 <img src="doc/rasterization_result.png" width="640px">
 
+### Ray-tracing
+
+Starting to work on it.
+
 ## Installation
 
 ### Install from Source Code

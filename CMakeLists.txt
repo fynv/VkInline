@@ -33,7 +33,7 @@ add_definitions(-std=c++17)
 add_compile_options(-fPIC)
 endif()
 
-
+add_definitions(-D"VK_ENABLE_BETA_EXTENSIONS")
 include_directories(${INCLUDE_DIR})
 add_subdirectory(thirdparty/volk)
 add_subdirectory(thirdparty/glslang)
