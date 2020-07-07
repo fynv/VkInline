@@ -67,13 +67,19 @@ internal/impl_context.inl
 
 add_definitions(${DEFINES})
 add_library(unqlite STATIC thirdparty/unqlite/unqlite.h thirdparty/unqlite/unqlite.c)
+
 add_library(VkInline ${LIB_SOURCES} ${LIB_HEADERS} ${INTERNAL_HEADERS})
 target_link_libraries(VkInline volk glslang SPIRV spirv-cross-glsl unqlite)
+
+add_library(VkInlineEX ${LIB_SOURCES} ${LIB_HEADERS} ${INTERNAL_HEADERS})
+target_compile_definitions(VkInlineEX PUBLIC _VkInlineEX)
+target_link_libraries(VkInlineEX volk glslang SPIRV spirv-cross-glsl unqlite)
 
 
 if (WIN32) 
 else()
 target_link_libraries(VkInline dl)
+target_link_libraries(VkInlineEX dl)
 endif()
 
 
@@ -83,6 +89,7 @@ ENDIF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 
 install(FILES ${LIB_HEADERS} DESTINATION include)
 install(TARGETS VkInline DESTINATION lib)
+install(TARGETS VkInlineEX DESTINATION lib)
 
 set(VKINLINE_BUILD_TESTS false CACHE BOOL "Build tests")
 

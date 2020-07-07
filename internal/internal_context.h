@@ -39,7 +39,12 @@ namespace VkInline
 			VkDebugUtilsMessengerEXT m_debugMessenger;
 			VkInstance m_instance;
 			VkPhysicalDevice m_physicalDevice;
+
+#ifndef _VkInlineEX
 			VkPhysicalDeviceBufferDeviceAddressFeaturesEXT m_bufferDeviceAddressFeatures;
+#else
+			VkPhysicalDeviceBufferDeviceAddressFeatures m_bufferDeviceAddressFeatures;
+#endif
 			VkPhysicalDeviceDescriptorIndexingFeatures m_descriptorIndexingFeatures;
 			VkPhysicalDeviceScalarBlockLayoutFeatures m_scalarBlockLayoutFeatures;
 			VkPhysicalDeviceFeatures2 m_features2;

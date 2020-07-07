@@ -149,9 +149,15 @@ bool GLSL2SPV(const char* InputCString, const std::unordered_map<std::string, co
 	glslang::TShader Shader(ShaderType);
 	Shader.setStrings(&InputCString, 1);
 
+#ifndef _VkInlineEX
 	int ClientInputSemanticsVersion = 110;
 	glslang::EShTargetClientVersion VulkanClientVersion = glslang::EShTargetVulkan_1_1;
-	glslang::EShTargetLanguageVersion TargetVersion = glslang::EShTargetSpv_1_1;
+#else
+	int ClientInputSemanticsVersion = 120;
+	glslang::EShTargetClientVersion VulkanClientVersion = glslang::EShTargetVulkan_1_2;
+#endif
+
+	glslang::EShTargetLanguageVersion TargetVersion = glslang::EShTargetSpv_1_0;
 
 	Shader.setEnvInput(glslang::EShSourceGlsl, ShaderType, glslang::EShClientVulkan, ClientInputSemanticsVersion);
 	Shader.setEnvClient(glslang::EShClientVulkan, VulkanClientVersion);
@@ -175,7 +181,7 @@ bool GLSL2SPV(const char* InputCString, const std::unordered_map<std::string, co
 	
 	const char* PreprocessedCStr = PreprocessedGLSL.c_str();
 	Shader.setStrings(&PreprocessedCStr, 1);
-	if (!Shader.parse(&Resources, 110, false, messages))
+	if (!Shader.parse(&Resources, DefaultVersion, false, messages))
 	{
 		puts("GLSL Parsing Failed for: ");
 		puts(Shader.getInfoLog());

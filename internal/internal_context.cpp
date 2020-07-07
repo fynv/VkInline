@@ -52,10 +52,17 @@ namespace VkInline
 				VkApplicationInfo appInfo = {};
 				appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 				appInfo.pApplicationName = "TextureGen";
-				appInfo.applicationVersion = VK_MAKE_VERSION(1, 1, 0);
 				appInfo.pEngineName = "No Engine";
+
+#ifndef _VkInlineEX
+				appInfo.applicationVersion = VK_MAKE_VERSION(1, 1, 0);				
 				appInfo.engineVersion = VK_MAKE_VERSION(1, 1, 0);
 				appInfo.apiVersion = VK_API_VERSION_1_1;
+#else
+				appInfo.applicationVersion = VK_MAKE_VERSION(1, 2, 0);
+				appInfo.engineVersion = VK_MAKE_VERSION(1, 2, 0);
+				appInfo.apiVersion = VK_API_VERSION_1_2;
+#endif
 
 				const char* name_extensions[] = {
 					VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
@@ -110,7 +117,11 @@ namespace VkInline
 			
 			{
 				m_bufferDeviceAddressFeatures = {};
+#ifndef _VkInlineEX
 				m_bufferDeviceAddressFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_EXT;
+#else
+				m_bufferDeviceAddressFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
+#endif
 				m_bufferDeviceAddressFeatures.pNext = &m_descriptorIndexingFeatures;
 				m_descriptorIndexingFeatures = {};
 				m_descriptorIndexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
@@ -145,7 +156,11 @@ namespace VkInline
 				queueCreateInfo.pQueuePriorities = &m_queuePriority;
 
 				const char* name_extensions[] = {
+#ifndef _VkInlineEX
 					VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+#else
+					VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+#endif
 					VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
 					VK_EXT_SCALAR_BLOCK_LAYOUT_EXTENSION_NAME
 				};
@@ -160,7 +175,11 @@ namespace VkInline
 
 				if (vkCreateDevice(m_physicalDevice, &createInfo, nullptr, &m_device) != VK_SUCCESS)
 				{
+#ifndef _VkInlineEX
 					printf("Failed to create vulkan device\n");
+#else
+					printf("Failed to create vulkan device. (Vulkan 1.2 not supported, trying Vulkan 1.1.)\n");
+#endif
 					return false;
 				}
 			}
@@ -193,7 +212,7 @@ namespace VkInline
 			vkDestroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);
 #endif
 			vkDestroyDevice(m_device, nullptr);
-			vkDestroyInstance(m_instance, nullptr);
+			// vkDestroyInstance(m_instance, nullptr); // cause halt for beta driver
 		}
 
 		Context::Stream* Context::_stream(std::thread::id threadId) const
@@ -350,7 +369,11 @@ namespace VkInline
 			VkBufferDeviceAddressInfo bufAdrInfo = {};
 			bufAdrInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
 			bufAdrInfo.buffer = m_buf;
+#ifndef _VkInlineEX
 			return vkGetBufferDeviceAddressEXT(ctx->device(), &bufAdrInfo);
+#else
+			return vkGetBufferDeviceAddressKHR(ctx->device(), &bufAdrInfo);
+#endif
 		}
 
 		Buffer::Buffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags flags)
@@ -389,6 +412,14 @@ namespace VkInline
 			memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 			memoryAllocateInfo.allocationSize = memRequirements.size;
 			memoryAllocateInfo.memoryTypeIndex = memoryTypeIndex;
+
+#ifdef _VkInlineEX
+			VkMemoryAllocateFlagsInfo memoryAllocateFlagsInfo = {};
+			memoryAllocateFlagsInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO;
+			if ((usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) != 0)
+				memoryAllocateFlagsInfo.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
+			memoryAllocateInfo.pNext = &memoryAllocateFlagsInfo;
+#endif
 
 			vkAllocateMemory(ctx->device(), &memoryAllocateInfo, nullptr, &m_mem);
 			vkBindBufferMemory(ctx->device(), m_buf, m_mem, 0);

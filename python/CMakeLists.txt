@@ -41,13 +41,17 @@ include_directories(${INCLUDE_DIR})
 add_definitions(${DEFINES})
 
 add_library(PyVkInline SHARED ${SRC})
+add_library(PyVkInlineEX SHARED ${SRC})
 target_link_libraries(PyVkInline VkInline)
+target_link_libraries(PyVkInlineEX VkInlineEX)
 
 
 if (WIN32) 
 install(TARGETS PyVkInline RUNTIME DESTINATION test_python/VkInline)
+install(TARGETS PyVkInlineEX RUNTIME DESTINATION test_python/VkInline)
 else()
 install(TARGETS PyVkInline DESTINATION test_python/VkInline)
+install(TARGETS PyVkInlineEX DESTINATION test_python/VkInline)
 endif()
 
 
@@ -55,6 +59,7 @@ set(PYTHON
 	VkInline/__init__.py
 	VkInline/cffi.py
 	VkInline/Native.py
+	VkInline/NativeEX.py
 	VkInline/utils.py
 	VkInline/Context.py	
 	VkInline/ShaderViewable.py
