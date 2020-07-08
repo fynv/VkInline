@@ -39,7 +39,7 @@ extern "C"
 	PY_VkInline_API void* n_computer_create(void* ptr_param_list, const char* body, unsigned type_locked);
 	PY_VkInline_API void n_computer_destroy(void* cptr);
 	PY_VkInline_API int n_computer_num_params(void* cptr);
-	PY_VkInline_API int n_computer_launch(void* ptr_kernel, void* ptr_gridDim, void* ptr_blockDim, void* ptr_arg_list, void* ptr_tex2d_list, void* ptr_tex3d_list);
+	PY_VkInline_API int n_computer_launch(void* ptr_kernel, void* ptr_gridDim, void* ptr_blockDim, void* ptr_arg_list, void* ptr_tex2d_list, void* ptr_tex3d_list, unsigned times_submission);
 
 	PY_VkInline_API void* n_drawcall_create(const char* code_body_vert, const char* code_body_frag);
 	PY_VkInline_API void n_drawcall_destroy(void* cptr);
@@ -89,7 +89,7 @@ extern "C"
 	PY_VkInline_API void n_rasterizer_set_clear_depth_buf(void* cptr, unsigned clear);
 	PY_VkInline_API void n_rasterizer_add_draw_call(void* cptr, void* draw_call);
 	PY_VkInline_API int n_rasterizer_launch(void* cptr, void* ptr_colorBufs, void* _depthBuf, void* ptr_resolveBufs, 
-		float* clear_colors, float clear_depth,	void* ptr_arg_list, void* ptr_tex2d_list, void* ptr_tex3d_list, void** ptr_launch_params);
+		float* clear_colors, float clear_depth,	void* ptr_arg_list, void* ptr_tex2d_list, void* ptr_tex3d_list, void** ptr_launch_params, unsigned times_submission);
 
 	// ShaderViewable
 	PY_VkInline_API const char* n_sv_name_view_type(void* cptr);

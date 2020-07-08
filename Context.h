@@ -87,7 +87,7 @@ namespace VkInline
 	public:
 		size_t num_params() const { return m_param_names.size(); }
 		Computer(const std::vector<const char*>& param_names, const char* code_body, bool type_locked = false);
-		bool launch(dim_type gridDim, dim_type blockDim, const ShaderViewable** args, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds);
+		bool launch(dim_type gridDim, dim_type blockDim, const ShaderViewable** args, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, size_t times_submission = 1);
 
 	private:
 		std::vector<std::string> m_param_names;
@@ -193,7 +193,7 @@ namespace VkInline
 		};
 
 		bool launch(const std::vector<Texture2D*>& colorBufs, Texture2D* depthBuf, const std::vector<Texture2D*>& resolveBufs, float* clear_colors, float clear_depth,
-			const ShaderViewable** args, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, Rasterizer::LaunchParam** launch_params);
+			const ShaderViewable** args, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, Rasterizer::LaunchParam** launch_params, size_t times_submission = 1);
 
 	private:
 		std::vector<std::string> m_param_names;

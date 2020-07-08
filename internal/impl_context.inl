@@ -483,7 +483,7 @@ namespace VkInline
 		return kid;
 	}
 
-	bool Context::launch_compute(dim_type gridDim, size_t num_params, const ShaderViewable** args, Texture2D* const* tex2ds, Texture3D* const* tex3ds, unsigned kid, const size_t* offsets)
+	bool Context::launch_compute(dim_type gridDim, size_t num_params, const ShaderViewable** args, Texture2D* const* tex2ds, Texture3D* const* tex3ds, unsigned kid, const size_t* offsets, size_t times_submission)
 	{
 		Internal::ComputePipeline* pipeline;
 		{
@@ -521,12 +521,12 @@ namespace VkInline
 		cmdBuf->dispatch(h_uniform.data(), i_tex2ds.data(), i_tex3ds.data(), gridDim.x, gridDim.y, gridDim.z);
 
 		const Internal::Context* ctx = Internal::Context::get_context();
-		ctx->SubmitCommandBuffer(cmdBuf);
+		ctx->SubmitCommandBuffer(cmdBuf, times_submission);
 
 		return true;
 	}
 
-	bool Context::launch_compute(dim_type gridDim, dim_type blockDim, const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, const char* code_body)
+	bool Context::launch_compute(dim_type gridDim, dim_type blockDim, const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, const char* code_body, size_t times_submission)
 	{
 		unsigned kid = _build_compute_pipeline(blockDim, arg_map, tex2ds.size(), tex3ds.size(), code_body);
 		if (kid == (unsigned)(-1)) return false;
@@ -561,10 +561,10 @@ namespace VkInline
 			args[i] = arg_map[i].obj;
 		}
 
-		return launch_compute(gridDim, arg_map.size(), args.data(), tex2ds.data(), tex3ds.data(), kid, offsets.data());
+		return launch_compute(gridDim, arg_map.size(), args.data(), tex2ds.data(), tex3ds.data(), kid, offsets.data(), times_submission);
 	}
 
-	bool Context::launch_compute(dim_type gridDim, dim_type blockDim, const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, const char* code_body, unsigned& kid, size_t* offsets)
+	bool Context::launch_compute(dim_type gridDim, dim_type blockDim, const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, const char* code_body, unsigned& kid, size_t* offsets, size_t times_submission)
 	{
 		kid = _build_compute_pipeline(blockDim, arg_map, tex2ds.size(), tex3ds.size(), code_body);
 		if (kid == (unsigned)(-1)) return false;
@@ -597,7 +597,7 @@ namespace VkInline
 			args[i] = arg_map[i].obj;
 		}
 
-		return launch_compute(gridDim, arg_map.size(), args.data(), tex2ds.data(), tex3ds.data(), kid, offsets);
+		return launch_compute(gridDim, arg_map.size(), args.data(), tex2ds.data(), tex3ds.data(), kid, offsets, times_submission);
 	}
 
 	unsigned Context::_build_render_pass(
@@ -812,7 +812,7 @@ namespace VkInline
 	}
 
 	bool Context::launch_rasterization(Texture2D* const* colorBufs, Texture2D* depthBuf, Texture2D* const* resolveBufs, float* clear_colors, float clear_depth,
-		size_t num_params, const ShaderViewable** args, Texture2D* const* tex2ds, Texture3D* const* tex3ds, Rasterizer::LaunchParam** launch_params, unsigned rpid, const size_t* offsets)
+		size_t num_params, const ShaderViewable** args, Texture2D* const* tex2ds, Texture3D* const* tex3ds, Rasterizer::LaunchParam** launch_params, unsigned rpid, const size_t* offsets, size_t times_submission)
 	{
 		Internal::RenderPass* renderpass;
 		{
@@ -876,13 +876,13 @@ namespace VkInline
 		cmdBuf->draw(tex_colorBufs.data(), tex_depthBuf, tex_resolveBufs.data(), clear_colors, clear_depth, h_uniform.data(), i_tex2ds.data(), i_tex3ds.data(), dps.data());
 
 		const Internal::Context* ctx = Internal::Context::get_context();
-		ctx->SubmitCommandBuffer(cmdBuf);
+		ctx->SubmitCommandBuffer(cmdBuf, times_submission);
 
 		return true;
 	}
 
 	bool Context::launch_rasterization(const std::vector<Attachement>& colorBufs, Attachement depthBuf, const std::vector<Attachement>& resolveBufs, float* clear_colors, float clear_depth,
-		const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, const std::vector<const DrawCall*>& draw_calls, Rasterizer::LaunchParam** launch_params)
+		const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, const std::vector<const DrawCall*>& draw_calls, Rasterizer::LaunchParam** launch_params, size_t times_submission)
 	{
 		std::vector <Internal::AttachmentInfo> color_attachmentInfo(colorBufs.size());
 		std::vector <Texture2D*> tex_colorBufs(colorBufs.size());
@@ -948,11 +948,11 @@ namespace VkInline
 			args[i] = arg_map[i].obj;
 		}
 
-		return launch_rasterization(tex_colorBufs.data(), tex_depthBuf, tex_resolveBufs.data(), clear_colors, clear_depth, arg_map.size(), args.data(), tex2ds.data(), tex3ds.data(), launch_params, rpid, offsets.data());
+		return launch_rasterization(tex_colorBufs.data(), tex_depthBuf, tex_resolveBufs.data(), clear_colors, clear_depth, arg_map.size(), args.data(), tex2ds.data(), tex3ds.data(), launch_params, rpid, offsets.data(), times_submission);
 	}
 
 	bool Context::launch_rasterization(const std::vector<Attachement>& colorBufs, Attachement depthBuf, const std::vector<Attachement>& resolveBufs, float* clear_colors, float clear_depth,
-		const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, const std::vector<const DrawCall*>& draw_calls, Rasterizer::LaunchParam** launch_params, unsigned& rpid, size_t* offsets)
+		const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, const std::vector<const DrawCall*>& draw_calls, Rasterizer::LaunchParam** launch_params, unsigned& rpid, size_t* offsets, size_t times_submission)
 	{
 		std::vector <Internal::AttachmentInfo> color_attachmentInfo(colorBufs.size());
 		std::vector <Texture2D*> tex_colorBufs(colorBufs.size());
@@ -1017,7 +1017,7 @@ namespace VkInline
 			args[i] = arg_map[i].obj;
 		}
 
-		return launch_rasterization(tex_colorBufs.data(), tex_depthBuf, tex_resolveBufs.data(), clear_colors, clear_depth, arg_map.size(), args.data(), tex2ds.data(), tex3ds.data(), launch_params, rpid, offsets);
+		return launch_rasterization(tex_colorBufs.data(), tex_depthBuf, tex_resolveBufs.data(), clear_colors, clear_depth, arg_map.size(), args.data(), tex2ds.data(), tex3ds.data(), launch_params, rpid, offsets, times_submission);
 	}
 }
 

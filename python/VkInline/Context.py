@@ -32,7 +32,7 @@ class Computer:
     def num_params(self):
         return native.n_computer_num_params(self.m_cptr)
 
-    def launch(self, gridDim, blockDim, args, tex2ds=[], tex3ds=[]):
+    def launch(self, gridDim, blockDim, args, tex2ds=[], tex3ds=[], times_submission = 1):
         d_gridDim = Dim3(gridDim)
         d_blockDim = Dim3(blockDim)
         arg_list = ObjArray(args)
@@ -44,7 +44,8 @@ class Computer:
             d_blockDim.m_cptr, 
             arg_list.m_cptr,
             tex2d_list.m_cptr,
-            tex3d_list.m_cptr)
+            tex3d_list.m_cptr,
+            times_submission)
 
 class For:
     def __init__(self, param_names, name_inner, body, block_size=128, type_locked=False):
@@ -67,7 +68,7 @@ void main()
     def num_params(self):
         return native.n_computer_num_params(self.m_cptr) - 2
 
-    def launch(self, begin, end, args, tex2ds=[], tex3ds=[]): 
+    def launch(self, begin, end, args, tex2ds=[], tex3ds=[], times_submission = 1): 
         svbegin = SVUInt32(begin)
         svend = SVUInt32(end)
         args = args + [svbegin, svend]
@@ -83,9 +84,10 @@ void main()
             d_blockDim.m_cptr, 
             arg_list.m_cptr,
             tex2d_list.m_cptr,
-            tex3d_list.m_cptr)
+            tex3d_list.m_cptr,
+            times_submission)
 
-    def launch_n(self, n, args, tex2ds=[], tex3ds=[]):
+    def launch_n(self, n, args, tex2ds=[], tex3ds=[], times_submission = 1):
         svbegin = SVUInt32(0)
         svend = SVUInt32(n)
         args = args + [svbegin, svend]
@@ -101,7 +103,8 @@ void main()
             d_blockDim.m_cptr, 
             arg_list.m_cptr,
             tex2d_list.m_cptr,
-            tex3d_list.m_cptr)      
+            tex3d_list.m_cptr,
+            times_submission)      
 
 class DrawCall:
     def __init__(self, code_body_vert, code_body_frag, options={}):
@@ -233,7 +236,7 @@ class Rasterizer:
         self.m_draw_calls += [draw_call]
         native.n_rasterizer_add_draw_call(self.m_cptr, draw_call.m_cptr)
 
-    def launch(self, launch_params, colorBufs, depthBuf, clear_colors, clear_depth, args, tex2ds=[], tex3ds=[], resolveBufs=[]):
+    def launch(self, launch_params, colorBufs, depthBuf, clear_colors, clear_depth, args, tex2ds=[], tex3ds=[], resolveBufs=[], times_submission = 1):
         colorBuf_list = Texture2DArray(colorBufs)
         p_depthBuf = ffi.NULL
         if depthBuf!=None:
@@ -244,7 +247,18 @@ class Rasterizer:
         tex3d_list = Texture3DArray(tex3ds)
         launch_param_list = [LaunchParam(obj) for obj in launch_params]
         ptrs_launch_param_list = [lp.m_cptr for lp in launch_param_list]
-        native.n_rasterizer_launch(self.m_cptr, colorBuf_list.m_cptr, p_depthBuf, resolveBuf_list.m_cptr, clear_colors, clear_depth, arg_list.m_cptr, tex2d_list.m_cptr, tex3d_list.m_cptr, ptrs_launch_param_list)
+        native.n_rasterizer_launch(
+            self.m_cptr, 
+            colorBuf_list.m_cptr, 
+            p_depthBuf, 
+            resolveBuf_list.m_cptr, 
+            clear_colors, 
+            clear_depth, 
+            arg_list.m_cptr, 
+            tex2d_list.m_cptr, 
+            tex3d_list.m_cptr, 
+            ptrs_launch_param_list,
+            times_submission)
 
 
 
