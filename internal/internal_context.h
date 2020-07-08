@@ -389,8 +389,9 @@ namespace VkInline
 			VkDescriptorSet m_descriptorSet;
 			VkFramebuffer m_framebuffer;
 		};
-		
-
 	}
-
 }
+
+#ifdef _VkInlineEX
+#include "internal_context_ex.h"
+#endif

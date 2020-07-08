@@ -213,3 +213,7 @@ extern "C"
 
 }
 
+
+#ifdef _VkInlineEX
+#include "api_ex.h"
+#endif

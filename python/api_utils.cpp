@@ -1,13 +1,12 @@
 #include "api.h"
 #include "Context.h"
-#include "ShaderViewable.h"
 #include "SVBuffer.h"
 using namespace VkInline;
 #include <string>
 #include <vector>
 
 typedef std::vector<std::string> StrArray;
-typedef std::vector<const ShaderViewable*> PtrArray;
+typedef std::vector<const void*> PtrArray;
 typedef std::vector<Texture2D*> Tex2DArray;
 typedef std::vector<Texture3D*> Tex3DArray;
 

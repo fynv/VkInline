@@ -206,6 +206,9 @@ namespace VkInline
 		std::vector<size_t> m_offsets;
 		std::mutex m_mu_type_lock;
 	};
-
-
 }
+
+#ifdef _VkInlineEX
+#include "Context_ex.h"
+#endif
+

@@ -17,6 +17,8 @@ api_SVCombine.cpp
 api_SVObjBuffer.cpp
 api_Texture2D.cpp
 api_Texture3D.cpp
+api_ex.h
+api_Context_ex.inl
 )
 
 set (INCLUDE_DIR 
@@ -62,6 +64,7 @@ set(PYTHON
 	VkInline/NativeEX.py
 	VkInline/utils.py
 	VkInline/Context.py	
+	VkInline/ContextEX.py	
 	VkInline/ShaderViewable.py
 	VkInline/SVBuffer.py	
 	VkInline/SVCombine.py

@@ -2,8 +2,6 @@
 #include "SVBuffer.h"
 using namespace VkInline;
 
-typedef std::vector<const ShaderViewable*> PtrArray;
-
 void* n_svbuffer_create(const char* elem_type, unsigned long long size, void* hdata)
 {
 	return new SVBuffer(elem_type, size, hdata);

@@ -22,7 +22,11 @@ namespace VkInline
 			"};\n";
 
 		m_name_view_type = std::string("Buf_") + Add_Dynamic_Code(code.c_str());
-		m_data = new Internal::DeviceBuffer(m_elem_size*m_size, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+		VkBufferUsageFlags usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+#ifdef _VkInlineEX
+		usage |= VK_BUFFER_USAGE_RAY_TRACING_BIT_KHR;
+#endif
+		m_data = new Internal::DeviceBuffer(m_elem_size*m_size, usage);
 		if (hdata != nullptr)
 			m_data->upload(hdata);
 		else

@@ -368,4 +368,8 @@ int n_rasterizer_launch(void* cptr, void* ptr_colorBufs, void* _depthBuf, void* 
 }
 
 
+#ifdef _VkInlineEX
+#include "api_Context_ex.inl"
+#endif
+
 

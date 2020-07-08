@@ -209,6 +209,15 @@ unsigned n_texture3d_channelcount(void* tex3d);
 unsigned n_texture3d_vkformat(void* tex3d);
 void n_texture3d_upload(void* tex3d, void* hdata);
 void n_texture3d_download(void* tex3d, void* hdata);
+
+// Extensions
+void* n_blas_create_triangles(void* indBuf, void* posBuf);
+void* n_blas_create_procedure(void* aabbBuf);
+void n_blas_destroy(void* ptr_blas);
+void* n_mat4_create(const float* v);
+void n_mat4_destroy(void* ptr);
+void* n_tlas_create(void* ptr_blases, void* ptr_transes);
+void n_tlas_destroy(void* ptr);
 """)
 
 

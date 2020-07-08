@@ -1785,7 +1785,10 @@ namespace VkInline
 			vkCmdEndRenderPass(m_buf);
 
 		}
-
-
 	}
 }
+
+#ifdef _VkInlineEX
+#include "internal_context_ex.inl"
+#endif
+

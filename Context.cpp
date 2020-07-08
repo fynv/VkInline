@@ -620,3 +620,8 @@ namespace VkInline
 	}
 
 }
+
+#ifdef _VkInlineEX
+#include "Context_ex.inl"
+#endif
+

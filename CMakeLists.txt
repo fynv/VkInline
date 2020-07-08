@@ -56,6 +56,8 @@ Context.h
 SVBuffer.h
 SVCombine.h
 SVObjBuffer.h
+Context_ex.h
+Context_ex.inl
 )
 
 
@@ -63,6 +65,8 @@ set(INTERNAL_HEADERS
 thirdparty/crc64/crc64.h
 internal/internal_context.h
 internal/impl_context.inl
+internal/internal_context_ex.h
+internal/internal_context_ex.inl
 )
 
 add_definitions(${DEFINES})

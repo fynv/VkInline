@@ -11,6 +11,7 @@ set(PYTHON_TEST
 	test_tex2d.py
 	test_rasterization.py
 	test_obj.py
+	test_raytrace.py
 )
 
 install(FILES ${PYTHON_TEST} DESTINATION test_python )
