@@ -62,6 +62,7 @@ class RayTracer:
     def __init__(self, param_names, body_raygen, lst_body_miss, lst_body_hit, max_recursion_depth=1, type_locked=False):
         o_param_names = StrArray(param_names)
         o_body_miss = StrArray(lst_body_miss)
+        self.m_lst_body_hit = lst_body_hit
         o_body_hit = ObjArray(lst_body_hit)
         self.m_cptr = native.n_raytracer_create(o_param_names.m_cptr, body_raygen.encode('utf-8'), o_body_miss.m_cptr, o_body_hit.m_cptr, max_recursion_depth, type_locked)
 
