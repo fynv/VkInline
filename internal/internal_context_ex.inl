@@ -347,7 +347,7 @@ namespace VkInline
 					binding_tlas.binding = 10;
 					binding_tlas.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
 					binding_tlas.descriptorCount = (unsigned)num_tlas;
-					binding_tlas.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+					binding_tlas.stageFlags = all_ray_trace_bits;
 					descriptorSetLayoutBindings.push_back(binding_tlas);
 				}
 

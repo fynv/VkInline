@@ -35,6 +35,14 @@ namespace VkInline
 		bool launch_rasterization(const std::vector<Attachement>& colorBufs, Attachement depthBuf, const std::vector<Attachement>& resolveBufs, float* clear_colors, float clear_depth,
 			const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, const std::vector<const DrawCall*>& draw_calls, Rasterizer::LaunchParam** launch_params, unsigned& rpid, size_t* offsets, size_t times_submission);
 
+#ifdef _VkInlineEX
+		bool launch_raytrace(dim_type glbDim, size_t num_params, const ShaderViewable** args, TopLevelAS* const* arr_tlas, Texture2D* const * tex2ds, Texture3D* const * tex3ds, unsigned kid, const size_t* offsets, size_t times_submission);
+		bool launch_raytrace(dim_type glbDim, const std::vector<CapturedShaderViewable>& arg_map, unsigned maxRecursionDepth, const std::vector<TopLevelAS*>& arr_tlas, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds,
+			const char* body_raygen, const std::vector<const char*>& body_miss,	const std::vector<const BodyHitShaders*>& body_hit, size_t times_submission);
+		bool launch_raytrace(dim_type glbDim, const std::vector<CapturedShaderViewable>& arg_map, unsigned maxRecursionDepth, const std::vector<TopLevelAS*>& arr_tlas, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds,
+			const char* body_raygen, const std::vector<const char*>& body_miss, const std::vector<const BodyHitShaders*>& body_hit, unsigned& kid, size_t* offsets, size_t times_submission);
+#endif
+
 		void add_built_in_header(const char* name, const char* content);
 		void add_code_block(const char* code);
 		void add_inlcude_filename(const char* fn);
@@ -49,6 +57,13 @@ namespace VkInline
 		unsigned _build_render_pass(
 			const std::vector <Internal::AttachmentInfo>& color_attachmentInfo, const Internal::AttachmentInfo* depth_attachmentInfo, const std::vector <Internal::AttachmentInfo>& resolve_attachmentInfo,
 			const std::vector<CapturedShaderViewable>& arg_map, size_t num_tex2d, size_t num_tex3d, const std::vector<const DrawCall*>& draw_calls);
+
+#ifdef _VkInlineEX
+		unsigned _build_raytrace_pipeline(const std::vector<CapturedShaderViewable>& arg_map, unsigned maxRecursionDepth, size_t num_tlas, size_t num_tex2d, size_t num_tex3d,
+			const char* body_raygen,
+			const std::vector<const char*>& body_miss,
+			const std::vector<const BodyHitShaders*>& body_hit);
+#endif
 
 		bool m_verbose;
 		std::unordered_map<std::string, const char*> m_header_map;
@@ -73,10 +88,18 @@ namespace VkInline
 		std::unordered_map<int64_t, unsigned> m_map_render_passes;
 		std::shared_mutex m_mutex_render_passes;
 
+#ifdef _VkInlineEX
+		std::vector <Internal::RayTracePipeline*> m_cache_raytrace_pipelines;
+		std::unordered_map<int64_t, unsigned> m_map_raytrace_pipelines;
+		std::shared_mutex m_mutex_raytrace_pipelines;
+#endif
 	};
 }
 
 #include "impl_context.inl"
+#ifdef _VkInlineEX
+#include "impl_context_ex.inl"
+#endif 
 
 namespace VkInline
 {

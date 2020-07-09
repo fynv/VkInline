@@ -17,12 +17,7 @@ extern "C"
 	PY_VkInline_API void n_pointer_array_destroy(void* ptr_arr);
 	PY_VkInline_API void* n_dim3_create(unsigned x, unsigned y, unsigned z);
 	PY_VkInline_API void n_dim3_destroy(void* cptr);
-	PY_VkInline_API void *n_tex2d_array_create(unsigned long long size, void** ptrs);
-	PY_VkInline_API unsigned long long n_tex2d_array_size(void* ptr_arr);
-	PY_VkInline_API void n_tex2d_array_destroy(void* ptr_arr);
-	PY_VkInline_API void *n_tex3d_array_create(unsigned long long size, void** ptrs);
-	PY_VkInline_API unsigned long long n_tex3d_array_size(void* ptr_arr);
-	PY_VkInline_API void n_tex3d_array_destroy(void* ptr_arr);
+
 	PY_VkInline_API void* n_launch_param_from_count(unsigned count);
 	PY_VkInline_API void* n_launch_param_from_buffer(void* buf);
 	PY_VkInline_API void n_launch_param_destroy(void* lp);

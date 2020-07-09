@@ -29,6 +29,11 @@ namespace VkInline
 		auto context = Internal::Context::get_context();
 		context->Wait();
 
+#ifdef _VkInlineEX
+		for (size_t i = 0; i < m_cache_raytrace_pipelines.size(); i++)
+			delete m_cache_raytrace_pipelines[i];
+#endif
+
 		for (size_t i = 0; i < m_cache_compute_pipelines.size(); i++)
 			delete m_cache_compute_pipelines[i];
 

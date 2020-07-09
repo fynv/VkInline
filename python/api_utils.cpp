@@ -62,44 +62,6 @@ void n_dim3_destroy(void* cptr)
 	delete v;
 }
 
-void *n_tex2d_array_create(unsigned long long size, void** ptrs)
-{
-	Tex2DArray* ret = new Tex2DArray(size);
-	memcpy(ret->data(), ptrs, sizeof(void*)*size);
-	return ret;
-}
-
-unsigned long long n_tex2d_array_size(void* ptr_arr)
-{
-	Tex2DArray* arr = (Tex2DArray*)ptr_arr;
-	return arr->size();
-}
-
-void n_tex2d_array_destroy(void* ptr_arr)
-{
-	Tex2DArray* arr = (Tex2DArray*)ptr_arr;
-	delete arr;
-}
-
-void *n_tex3d_array_create(unsigned long long size, void** ptrs)
-{
-	Tex3DArray* ret = new Tex3DArray(size);
-	memcpy(ret->data(), ptrs, sizeof(void*)*size);
-	return ret;
-}
-
-unsigned long long n_tex3d_array_size(void* ptr_arr)
-{
-	Tex3DArray* arr = (Tex3DArray*)ptr_arr;
-	return arr->size();
-}
-
-void n_tex3d_array_destroy(void* ptr_arr)
-{
-	Tex3DArray* arr = (Tex3DArray*)ptr_arr;
-	delete arr;
-}
-
 void* n_launch_param_from_count(unsigned count)
 {
 	return new Rasterizer::LaunchParam({ count, nullptr });

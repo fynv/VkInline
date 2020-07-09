@@ -102,4 +102,80 @@ namespace VkInline
 		delete m_tlas;
 	}
 
+	BodyHitShaders::BodyHitShaders(const char* body_closest_hit, const char* body_intersection)
+	{
+		m_body_closest_hit = body_closest_hit;
+		if (body_intersection!=nullptr)
+			m_body_intersection = body_intersection;
+	}
+
+	const char* BodyHitShaders::body_closest_hit() const
+	{
+		return m_body_closest_hit.c_str();
+	}
+
+	const char* BodyHitShaders::body_intersection() const
+	{
+		if (m_body_intersection.empty()) return nullptr;
+		return m_body_intersection.c_str();
+	}
+
+	RayTracer::RayTracer(const std::vector<const char*>& param_names, const char* body_raygen, const std::vector<const char*>& body_miss, const std::vector<const BodyHitShaders*>& body_hit, unsigned maxRecursionDepth, bool type_locked)
+		: m_param_names(param_names.size()), m_body_raygen(body_raygen), m_body_miss(body_miss.size()), m_body_hit(body_hit), m_maxRecursionDepth(maxRecursionDepth), m_type_locked(type_locked)
+	{
+		for (size_t i = 0; i < param_names.size(); i++)
+			m_param_names[i] = param_names[i];
+
+		for (size_t i = 0; i < body_miss.size(); i++)
+			m_body_miss[i] = body_miss[i];	
+
+		m_kid = (unsigned)(-1);
+	}
+
+	bool RayTracer::launch(dim_type glbDim, const ShaderViewable** args, const std::vector<TopLevelAS*>& arr_tlas, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, size_t times_submission)
+	{
+		Context& ctx = Context::get_context();
+		if (!m_type_locked)
+		{
+			std::vector<CapturedShaderViewable> arg_map(m_param_names.size());
+			for (size_t i = 0; i < m_param_names.size(); i++)
+			{
+				arg_map[i].obj_name = m_param_names[i].c_str();
+				arg_map[i].obj = args[i];
+			}
+
+			std::vector<const char*> p_body_miss(m_body_miss.size());
+			for (size_t i = 0; i < m_body_miss.size(); i++)
+				p_body_miss[i] = m_body_miss[i].c_str();
+
+			return ctx.launch_raytrace(glbDim, arg_map, m_maxRecursionDepth, arr_tlas, tex2ds, tex3ds, 
+				m_body_raygen.c_str(), p_body_miss, m_body_hit, times_submission);
+		}
+		else
+		{
+			std::unique_lock<std::mutex> locker(m_mu_type_lock);
+			if (m_kid == (unsigned)(-1))
+			{
+				std::vector<CapturedShaderViewable> arg_map(m_param_names.size());
+				for (size_t i = 0; i < m_param_names.size(); i++)
+				{
+					arg_map[i].obj_name = m_param_names[i].c_str();
+					arg_map[i].obj = args[i];
+				}
+				std::vector<const char*> p_body_miss(m_body_miss.size());
+				for (size_t i = 0; i < m_body_miss.size(); i++)
+					p_body_miss[i] = m_body_miss[i].c_str();
+
+				m_offsets.resize(m_param_names.size() + 1);
+				return ctx.launch_raytrace(glbDim, arg_map, m_maxRecursionDepth, arr_tlas, tex2ds, tex3ds,
+					m_body_raygen.c_str(), p_body_miss, m_body_hit, m_kid, m_offsets.data(), times_submission);
+			}
+			else
+			{
+				locker.unlock();
+				return ctx.launch_raytrace(glbDim, m_param_names.size(), args, arr_tlas.data(), tex2ds.data(), tex3ds.data(), m_kid, m_offsets.data(), times_submission);
+			}
+		}
+	}
+
 }

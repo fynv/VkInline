@@ -16,12 +16,6 @@ unsigned long long n_pointer_array_size(void* ptr_arr);
 void n_pointer_array_destroy(void* ptr_arr);
 void* n_dim3_create(unsigned x, unsigned y, unsigned z);
 void n_dim3_destroy(void* cptr);
-void *n_tex2d_array_create(unsigned long long size, void** ptrs);
-unsigned long long n_tex2d_array_size(void* ptr_arr);
-void n_tex2d_array_destroy(void* ptr_arr);
-void *n_tex3d_array_create(unsigned long long size, void** ptrs);
-unsigned long long n_tex3d_array_size(void* ptr_arr);
-void n_tex3d_array_destroy(void* ptr_arr);
 void* n_launch_param_from_count(unsigned count);
 void* n_launch_param_from_buffer(void* buf);
 void n_launch_param_destroy(void* lp);
@@ -218,6 +212,12 @@ void* n_mat4_create(const float* v);
 void n_mat4_destroy(void* ptr);
 void* n_tlas_create(void* ptr_blases, void* ptr_transes);
 void n_tlas_destroy(void* ptr);
+void* n_hit_shaders_create(const char* closest_hit, const char* intersection);
+void n_hit_shaders_destroy(void* ptr);
+void* n_raytracer_create(void* ptr_param_list, const char* body_raygen, void* ptr_body_miss, void* ptr_body_hit, unsigned maxRecursionDepth, unsigned type_locked);
+void n_raytracer_destroy(void* cptr);
+int n_raytracer_num_params(void* cptr);
+int n_raytracer_launch(void* ptr_raytracer, void* ptr_glbDim, void* ptr_arg_list, void* ptr_tlas_list, void* ptr_tex2d_list, void* ptr_tex3d_list, unsigned times_submission);
 """)
 
 

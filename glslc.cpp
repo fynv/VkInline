@@ -228,3 +228,23 @@ bool GLSL2SPV_Fragment(const char* InputCString, const std::unordered_map<std::s
 {
 	return GLSL2SPV(InputCString, headers, SpirV, EShLangFragment);
 }
+
+bool GLSL2SPV_Raygen(const char* InputCString, const std::unordered_map<std::string, const char*>* headers, std::vector<unsigned int>& SpirV)
+{
+	return GLSL2SPV(InputCString, headers, SpirV, EShLangRayGen);
+}
+
+bool GLSL2SPV_Miss(const char* InputCString, const std::unordered_map<std::string, const char*>* headers, std::vector<unsigned int>& SpirV)
+{
+	return GLSL2SPV(InputCString, headers, SpirV, EShLangMiss);
+}
+
+bool GLSL2SPV_ClosestHit(const char* InputCString, const std::unordered_map<std::string, const char*>* headers, std::vector<unsigned int>& SpirV)
+{
+	return GLSL2SPV(InputCString, headers, SpirV, EShLangClosestHit);
+}
+
+bool GLSL2SPV_Intersect(const char* InputCString, const std::unordered_map<std::string, const char*>* headers, std::vector<unsigned int>& SpirV)
+{
+	return GLSL2SPV(InputCString, headers, SpirV, EShLangIntersect);
+}

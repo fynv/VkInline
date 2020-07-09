@@ -57,8 +57,7 @@ void* n_computer_create(void* ptr_param_list, const char* body, unsigned type_lo
 
 void n_computer_destroy(void* cptr)
 {
-	Computer* kernel = (Computer*)cptr;
-	delete kernel;
+	delete (Computer*)cptr;
 }
 
 int n_computer_num_params(void* cptr)

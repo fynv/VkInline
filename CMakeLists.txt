@@ -65,6 +65,7 @@ set(INTERNAL_HEADERS
 thirdparty/crc64/crc64.h
 internal/internal_context.h
 internal/impl_context.inl
+internal/impl_context_ex.inl
 internal/internal_context_ex.h
 internal/internal_context_ex.inl
 )

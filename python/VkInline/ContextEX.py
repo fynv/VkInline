@@ -45,7 +45,45 @@ class TopLevelAS:
         native.n_tlas_destroy(self.m_cptr)
 
 
+class HitShaders:
+    def __init__(self, closest_hit, intersection=None):
+        p_closest_hit = closest_hit.encode('utf-8')
+        if intersection == None:
+            p_intersection = ffi.NULL
+        else:
+            p_intersection = intersection.encode('utf-8')
+        self.m_cptr = native.n_hit_shaders_create(p_closest_hit, p_intersection)
+
+    def __del__(self):
+        native.n_hit_shaders_destroy(self.m_cptr)
 
 
+class RayTracer:
+    def __init__(self, param_names, body_raygen, lst_body_miss, lst_body_hit, max_recursion_depth=1, type_locked=False):
+        o_param_names = StrArray(param_names)
+        o_body_miss = StrArray(lst_body_miss)
+        o_body_hit = ObjArray(lst_body_hit)
+        self.m_cptr = native.n_raytracer_create(o_param_names.m_cptr, body_raygen.encode('utf-8'), o_body_miss.m_cptr, o_body_hit.m_cptr, max_recursion_depth, type_locked)
+
+    def __del__(self):
+        native.n_raytracer_destroy(self.m_cptr)
+
+    def num_params(self):
+        return native.n_raytracer_num_params(self.m_cptr)
+
+    def launch(self, glbDim, args, lst_tlas, tex2ds=[], tex3ds=[], times_submission = 1):
+        d_glbDim = Dim3(glbDim)
+        arg_list = ObjArray(args)
+        tlas_list = ObjArray(lst_tlas)
+        tex2d_list = ObjArray(tex2ds)
+        tex3d_list = ObjArray(tex3ds)
+        native.n_raytracer_launch(
+            self.m_cptr, 
+            d_glbDim.m_cptr,         
+            arg_list.m_cptr,
+            tlas_list.m_cptr,
+            tex2d_list.m_cptr,
+            tex3d_list.m_cptr,
+            times_submission)
 
 

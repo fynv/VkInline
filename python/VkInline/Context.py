@@ -36,8 +36,8 @@ class Computer:
         d_gridDim = Dim3(gridDim)
         d_blockDim = Dim3(blockDim)
         arg_list = ObjArray(args)
-        tex2d_list = Texture2DArray(tex2ds)
-        tex3d_list = Texture3DArray(tex3ds)
+        tex2d_list = ObjArray(tex2ds)
+        tex3d_list = ObjArray(tex3ds)
         native.n_computer_launch(
             self.m_cptr, 
             d_gridDim.m_cptr, 
@@ -76,8 +76,8 @@ void main()
         d_gridDim = Dim3(numBlocks)
         d_blockDim = Dim3(self.block_size)
         arg_list = ObjArray(args)
-        tex2d_list = Texture2DArray(tex2ds)
-        tex3d_list = Texture3DArray(tex3ds)
+        tex2d_list = ObjArray(tex2ds)
+        tex3d_list = ObjArray(tex3ds)
         native.n_computer_launch(
             self.m_cptr, 
             d_gridDim.m_cptr, 
@@ -95,8 +95,8 @@ void main()
         d_gridDim = Dim3(numBlocks)
         d_blockDim = Dim3(self.block_size)
         arg_list = ObjArray(args)
-        tex2d_list = Texture2DArray(tex2ds)
-        tex3d_list = Texture3DArray(tex3ds)
+        tex2d_list = ObjArray(tex2ds)
+        tex3d_list = ObjArray(tex3ds)
         native.n_computer_launch(
             self.m_cptr, 
             d_gridDim.m_cptr, 
@@ -237,14 +237,14 @@ class Rasterizer:
         native.n_rasterizer_add_draw_call(self.m_cptr, draw_call.m_cptr)
 
     def launch(self, launch_params, colorBufs, depthBuf, clear_colors, clear_depth, args, tex2ds=[], tex3ds=[], resolveBufs=[], times_submission = 1):
-        colorBuf_list = Texture2DArray(colorBufs)
+        colorBuf_list = ObjArray(colorBufs)
         p_depthBuf = ffi.NULL
         if depthBuf!=None:
             p_depthBuf = depthBuf.m_cptr
-        resolveBuf_list = Texture2DArray(resolveBufs)
+        resolveBuf_list = ObjArray(resolveBufs)
         arg_list = ObjArray(args)
-        tex2d_list = Texture2DArray(tex2ds)
-        tex3d_list = Texture3DArray(tex3ds)
+        tex2d_list = ObjArray(tex2ds)
+        tex3d_list = ObjArray(tex3ds)
         launch_param_list = [LaunchParam(obj) for obj in launch_params]
         ptrs_launch_param_list = [lp.m_cptr for lp in launch_param_list]
         native.n_rasterizer_launch(
