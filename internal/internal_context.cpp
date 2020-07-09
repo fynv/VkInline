@@ -1642,7 +1642,7 @@ namespace VkInline
 				tex2dInfos[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 				tex2dInfos[i].imageView = tex2ds[i]->view();
 				tex2dInfos[i].sampler = m_render_pass->sampler()->sampler();
-				tex2ds[i]->apply_barrier(*this, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+				tex2ds[i]->apply_barrier(*this, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
 			}
 
 			std::vector<VkDescriptorImageInfo> tex3dInfos(m_render_pass->num_tex3d());
@@ -1652,7 +1652,7 @@ namespace VkInline
 				tex3dInfos[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 				tex3dInfos[i].imageView = tex3ds[i]->view();
 				tex3dInfos[i].sampler = m_render_pass->sampler()->sampler();
-				tex3ds[i]->apply_barrier(*this, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+				tex3ds[i]->apply_barrier(*this, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
 			}
 
 			std::vector<VkWriteDescriptorSet> list_wds;

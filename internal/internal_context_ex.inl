@@ -592,7 +592,7 @@ namespace VkInline
 				tex2dInfos[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 				tex2dInfos[i].imageView = tex2ds[i]->view();
 				tex2dInfos[i].sampler = m_pipeline->sampler()->sampler();
-				tex2ds[i]->apply_barrier(*this, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+				tex2ds[i]->apply_barrier(*this, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
 			}
 
 			std::vector<VkDescriptorImageInfo> tex3dInfos(m_pipeline->num_tex3d());
@@ -602,7 +602,7 @@ namespace VkInline
 				tex3dInfos[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 				tex3dInfos[i].imageView = tex3ds[i]->view();
 				tex3dInfos[i].sampler = m_pipeline->sampler()->sampler();
-				tex3ds[i]->apply_barrier(*this, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+				tex3ds[i]->apply_barrier(*this, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
 			}
 
 			std::vector<VkWriteDescriptorSet> list_wds;
@@ -643,10 +643,10 @@ namespace VkInline
 			vkUpdateDescriptorSets(ctx->device(), (unsigned)list_wds.size(), list_wds.data(), 0, nullptr);
 
 			if (m_ubo != nullptr)
-				m_ubo->apply_barrier(*this, VK_ACCESS_UNIFORM_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+				m_ubo->apply_barrier(*this, VK_ACCESS_UNIFORM_READ_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
 
 			vkCmdBindPipeline(m_buf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, m_pipeline->pipeline());
-			vkCmdBindDescriptorSets(m_buf, VK_PIPELINE_BIND_POINT_COMPUTE, m_pipeline->layout_pipeline(), 0, 1, &m_descriptorSet, 0, 0);
+			vkCmdBindDescriptorSets(m_buf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, m_pipeline->layout_pipeline(), 0, 1, &m_descriptorSet, 0, 0);
 			vkCmdTraceRaysKHR(m_buf, &m_pipeline->sbt_entry_raygen(), &m_pipeline->sbt_entry_miss(), &m_pipeline->sbt_entry_hit(), &m_pipeline->sbt_entry_callable(), dim_x, dim_y, dim_z);
 
 		}
