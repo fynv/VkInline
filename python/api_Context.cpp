@@ -51,8 +51,7 @@ void* n_computer_create(void* ptr_param_list, const char* body, unsigned type_lo
 	std::vector<const char*> params(num_params);
 	for (size_t i = 0; i < num_params; i++)
 		params[i] = (*param_list)[i].c_str();
-	Computer* cptr = new Computer(params, body, type_locked!=0);
-	return cptr;
+	return new Computer(params, body, type_locked!=0);
 }
 
 void n_computer_destroy(void* cptr)
@@ -315,8 +314,7 @@ void* n_rasterizer_create(void* ptr_param_list, unsigned type_locked)
 	{
 		params[i] = (*param_list)[i].c_str();
 	}
-	Rasterizer* cptr = new Rasterizer(params, type_locked);
-	return cptr;
+	return new Rasterizer(params, type_locked);
 }
 
 void n_rasterizer_destroy(void* cptr)

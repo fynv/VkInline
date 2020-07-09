@@ -75,8 +75,7 @@ void* n_raytracer_create(void* ptr_param_list, const char* body_raygen, void* pt
 	for (size_t i = 0; i < num_miss; i++)
 		body_misses[i] = (*body_miss)[i].c_str();
 
-	RayTracer* cptr = new RayTracer(params, body_raygen, body_misses, *body_hit, maxRecursionDepth, type_locked != 0);
-	return cptr;
+	return new RayTracer(params, body_raygen, body_misses, *body_hit, maxRecursionDepth, type_locked != 0);
 }
 
 void n_raytracer_destroy(void* cptr)
@@ -92,7 +91,7 @@ int n_raytracer_num_params(void* cptr)
 
 int n_raytracer_launch(void* ptr_raytracer, void* ptr_glbDim, void* ptr_arg_list, void* ptr_tlas_list, void* ptr_tex2d_list, void* ptr_tex3d_list, unsigned times_submission)
 {
-	RayTracer* raytracer = (RayTracer*)raytracer;
+	RayTracer* raytracer = (RayTracer*)ptr_raytracer;
 	size_t num_params = raytracer->num_params();
 
 	dim_type* glbDim = (dim_type*)ptr_glbDim;

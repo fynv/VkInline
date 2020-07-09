@@ -28,7 +28,8 @@ namespace VkInline
 			"#extension GL_EXT_shader_explicit_arithmetic_types_int64 : enable\n"
 			"#extension GL_EXT_buffer_reference2 : enable\n"
 			"#extension GL_EXT_nonuniform_qualifier : enable\n"
-			"#extension GL_EXT_scalar_block_layout : enable\n";
+			"#extension GL_EXT_scalar_block_layout : enable\n"
+			"#extension GL_EXT_ray_tracing : enable\n";
 
 		saxpy += "layout(binding = 10, set = 0) uniform accelerationStructureEXT arr_tlas[];\n";
 		saxpy += "layout(binding = 1) uniform sampler2D arr_tex2d[];\n";
