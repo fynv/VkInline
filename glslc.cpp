@@ -116,9 +116,9 @@ const TBuiltInResource DefaultTBuiltInResource =
 
 class BuiltInIncluder : public glslang::TShader::Includer
 {
-	const std::unordered_map<std::string, const char*>* m_headers;
+	const std::unordered_map<std::string, std::string>* m_headers;
 public:
-	BuiltInIncluder(const std::unordered_map<std::string, const char*>* headers = nullptr)
+	BuiltInIncluder(const std::unordered_map<std::string, std::string>* headers = nullptr)
 	{
 		m_headers = headers;
 	}
@@ -130,7 +130,7 @@ public:
 			auto iter = m_headers->find(headerName);
 			if (iter != m_headers->end())
 			{
-				IncludeResult* result = new IncludeResult(headerName, iter->second, strlen(iter->second), nullptr);
+				IncludeResult* result = new IncludeResult(headerName, iter->second.c_str(), iter->second.length(), nullptr);
 				return result;
 			}
 		}
@@ -143,7 +143,7 @@ public:
 	}
 };
 
-bool GLSL2SPV(const char* InputCString, const std::unordered_map<std::string, const char*>* headers, std::vector<unsigned int>& SpirV, EShLanguage ShaderType)
+bool GLSL2SPV(const char* InputCString, const std::unordered_map<std::string, std::string>* headers, std::vector<unsigned int>& SpirV, EShLanguage ShaderType)
 {
 	glslang::InitializeProcess();
 	glslang::TShader Shader(ShaderType);
@@ -214,37 +214,37 @@ bool GLSL2SPV(const char* InputCString, const std::unordered_map<std::string, co
 
 }
 
-bool GLSL2SPV_Compute(const char* InputCString, const std::unordered_map<std::string, const char*>* headers, std::vector<unsigned int>& SpirV)
+bool GLSL2SPV_Compute(const char* InputCString, const std::unordered_map<std::string, std::string>* headers, std::vector<unsigned int>& SpirV)
 {
 	return GLSL2SPV(InputCString, headers, SpirV, EShLangCompute);
 }
 
-bool GLSL2SPV_Vertex(const char* InputCString, const std::unordered_map<std::string, const char*>* headers, std::vector<unsigned int>& SpirV)
+bool GLSL2SPV_Vertex(const char* InputCString, const std::unordered_map<std::string, std::string>* headers, std::vector<unsigned int>& SpirV)
 {
 	return GLSL2SPV(InputCString, headers, SpirV, EShLangVertex);
 }
 
-bool GLSL2SPV_Fragment(const char* InputCString, const std::unordered_map<std::string, const char*>* headers, std::vector<unsigned int>& SpirV)
+bool GLSL2SPV_Fragment(const char* InputCString, const std::unordered_map<std::string, std::string>* headers, std::vector<unsigned int>& SpirV)
 {
 	return GLSL2SPV(InputCString, headers, SpirV, EShLangFragment);
 }
 
-bool GLSL2SPV_Raygen(const char* InputCString, const std::unordered_map<std::string, const char*>* headers, std::vector<unsigned int>& SpirV)
+bool GLSL2SPV_Raygen(const char* InputCString, const std::unordered_map<std::string, std::string>* headers, std::vector<unsigned int>& SpirV)
 {
 	return GLSL2SPV(InputCString, headers, SpirV, EShLangRayGen);
 }
 
-bool GLSL2SPV_Miss(const char* InputCString, const std::unordered_map<std::string, const char*>* headers, std::vector<unsigned int>& SpirV)
+bool GLSL2SPV_Miss(const char* InputCString, const std::unordered_map<std::string, std::string>* headers, std::vector<unsigned int>& SpirV)
 {
 	return GLSL2SPV(InputCString, headers, SpirV, EShLangMiss);
 }
 
-bool GLSL2SPV_ClosestHit(const char* InputCString, const std::unordered_map<std::string, const char*>* headers, std::vector<unsigned int>& SpirV)
+bool GLSL2SPV_ClosestHit(const char* InputCString, const std::unordered_map<std::string, std::string>* headers, std::vector<unsigned int>& SpirV)
 {
 	return GLSL2SPV(InputCString, headers, SpirV, EShLangClosestHit);
 }
 
-bool GLSL2SPV_Intersect(const char* InputCString, const std::unordered_map<std::string, const char*>* headers, std::vector<unsigned int>& SpirV)
+bool GLSL2SPV_Intersect(const char* InputCString, const std::unordered_map<std::string, std::string>* headers, std::vector<unsigned int>& SpirV)
 {
 	return GLSL2SPV(InputCString, headers, SpirV, EShLangIntersect);
 }

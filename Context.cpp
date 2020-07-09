@@ -66,7 +66,7 @@ namespace VkInline
 #endif
 
 		bool m_verbose;
-		std::unordered_map<std::string, const char*> m_header_map;
+		std::unordered_map<std::string, std::string> m_header_map;
 		std::vector<std::string> m_code_blocks;
 
 		std::string m_header_of_dynamic_code;

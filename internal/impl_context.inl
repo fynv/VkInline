@@ -3,9 +3,9 @@ using namespace SPIRV_CROSS_NAMESPACE;
 #include <unqlite.h>
 #include "crc64.h"
 
-bool GLSL2SPV_Compute(const char* InputCString, const std::unordered_map<std::string, const char*>* headers, std::vector<unsigned int>& SpirV);
-bool GLSL2SPV_Vertex(const char* InputCString, const std::unordered_map<std::string, const char*>* headers, std::vector<unsigned int>& SpirV);
-bool GLSL2SPV_Fragment(const char* InputCString, const std::unordered_map<std::string, const char*>* headers, std::vector<unsigned int>& SpirV);
+bool GLSL2SPV_Compute(const char* InputCString, const std::unordered_map<std::string, std::string>* headers, std::vector<unsigned int>& SpirV);
+bool GLSL2SPV_Vertex(const char* InputCString, const std::unordered_map<std::string, std::string>* headers, std::vector<unsigned int>& SpirV);
+bool GLSL2SPV_Fragment(const char* InputCString, const std::unordered_map<std::string, std::string>* headers, std::vector<unsigned int>& SpirV);
 
 namespace VkInline
 {

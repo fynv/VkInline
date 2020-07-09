@@ -1,7 +1,7 @@
-bool GLSL2SPV_Raygen(const char* InputCString, const std::unordered_map<std::string, const char*>* headers, std::vector<unsigned int>& SpirV);
-bool GLSL2SPV_Miss(const char* InputCString, const std::unordered_map<std::string, const char*>* headers, std::vector<unsigned int>& SpirV);
-bool GLSL2SPV_ClosestHit(const char* InputCString, const std::unordered_map<std::string, const char*>* headers, std::vector<unsigned int>& SpirV);
-bool GLSL2SPV_Intersect(const char* InputCString, const std::unordered_map<std::string, const char*>* headers, std::vector<unsigned int>& SpirV);
+bool GLSL2SPV_Raygen(const char* InputCString, const std::unordered_map<std::string, std::string>* headers, std::vector<unsigned int>& SpirV);
+bool GLSL2SPV_Miss(const char* InputCString, const std::unordered_map<std::string, std::string>* headers, std::vector<unsigned int>& SpirV);
+bool GLSL2SPV_ClosestHit(const char* InputCString, const std::unordered_map<std::string, std::string>* headers, std::vector<unsigned int>& SpirV);
+bool GLSL2SPV_Intersect(const char* InputCString, const std::unordered_map<std::string, std::string>* headers, std::vector<unsigned int>& SpirV);
 
 namespace VkInline
 {

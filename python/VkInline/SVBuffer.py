@@ -1,5 +1,6 @@
 from .Native import ffi, native
 from .ShaderViewable import ShaderViewable
+import ctypes
 
 class SVBuffer(ShaderViewable):
     def __init__(self, elem_type, size, ptr_host_data=None):
@@ -21,6 +22,6 @@ class SVBuffer(ShaderViewable):
         native.n_svbuffer_from_host(self.m_cptr, ffi.cast("void *", ptr_host_data))
 
     def to_host(self, ptr_host_data, begin = 0, end = -1):
-        native.n_svbuffer_to_host(self.m_cptr, ffi.cast("void *", ptr_host_data), begin, end)
+        native.n_svbuffer_to_host(self.m_cptr, ffi.cast("void *", ptr_host_data), ctypes.c_ulonglong(begin).value, ctypes.c_ulonglong(end).value)
 
     
