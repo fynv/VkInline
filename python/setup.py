@@ -9,7 +9,7 @@ setup(
 	license='Anti 996',
 	author='Fei Yang',
 	author_email='hyangfeih@gmail.com',
-	keywords='GPU Vulkan Python',
+	keywords='GPU Vulkan Python offscreen-rendering ray-tracing',
 	packages=['VkInline'],
 	package_data = { 'VkInline': ['*.dll', '*.so']},
 	install_requires = ['cffi','numpy', 'pyglm'],	
