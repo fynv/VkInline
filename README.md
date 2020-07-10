@@ -41,6 +41,10 @@ kernel.launch(1,128, [darr, darr_out, vki.SVFloat(10.0)])
 print (darr_out.to_host())
 
 ```
+Result:
+```
+[10. 20. 30. 40. 50.]
+```
 
 GLSL lacks language features like "struct member functions" and "operator overloading". 
 Therefore, array indexing doesn't look as nice as in CUDAInline.
