@@ -53,7 +53,7 @@ namespace VkInline
 			RayTracePipeline(const std::vector<unsigned>& spv_raygen,
 				const std::vector<const std::vector<unsigned>*>& spv_miss,
 				const std::vector<HitShaders>& spv_hit,
-				unsigned maxRecursionDepth, size_t num_tlas, size_t num_tex2d, size_t num_tex3d);
+				unsigned maxRecursionDepth, size_t num_tlas, size_t num_tex2d, size_t num_tex3d, size_t num_cubemap);
 
 			~RayTracePipeline();
 
@@ -68,6 +68,7 @@ namespace VkInline
 			size_t num_tlas() const { return m_num_tlas; }
 			size_t num_tex2d() const { return m_num_tex2d; }
 			size_t num_tex3d() const { return m_num_tex3d; }
+			size_t num_cubemap() const { return m_num_cubemap; }
 			Sampler* sampler() const { return m_sampler; }
 			CommandBufferRecycler* recycler() const;
 
@@ -85,6 +86,7 @@ namespace VkInline
 			size_t m_num_tlas;
 			size_t m_num_tex2d;
 			size_t m_num_tex3d;
+			size_t m_num_cubemap;
 			Sampler* m_sampler;
 
 			mutable std::unordered_map<std::thread::id, CommandBufferRecycler*> m_recyclers;
@@ -99,7 +101,7 @@ namespace VkInline
 			~RayTraceCommandBuffer();
 
 			virtual void Recycle();
-			void trace(void* param_data, TopLevelAS** arr_tlas, Texture2D** tex2ds, Texture3D** tex3ds, unsigned dim_x, unsigned dim_y, unsigned dim_z);
+			void trace(void* param_data, TopLevelAS** arr_tlas, Texture2D** tex2ds, Texture3D** tex3ds, TextureCube** cubemaps, unsigned dim_x, unsigned dim_y, unsigned dim_z);
 
 		private:
 			const RayTracePipeline* m_pipeline;

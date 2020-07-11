@@ -5,16 +5,16 @@ bool GLSL2SPV_Intersect(const char* InputCString, const std::unordered_map<std::
 
 namespace VkInline
 {
-	unsigned Context::_build_raytrace_pipeline(const std::vector<CapturedShaderViewable>& arg_map, unsigned maxRecursionDepth, size_t num_tlas, size_t num_tex2d, size_t num_tex3d,
-		const char* body_raygen,
-		const std::vector<const char*>& body_miss,
-		const std::vector<const BodyHitShaders*>& body_hit)
+	unsigned Context::_build_raytrace_pipeline(const std::vector<CapturedShaderViewable>& arg_map, unsigned maxRecursionDepth, 
+		size_t num_tlas, size_t num_tex2d, size_t num_tex3d, size_t num_cubemap,
+		const char* body_raygen, const std::vector<const char*>& body_miss,	const std::vector<const BodyHitShaders*>& body_hit)
 	{
 		Signature sig;
 		sig.push_feature(&maxRecursionDepth, sizeof(unsigned));
 		sig.push_feature(&num_tlas, sizeof(size_t));
 		sig.push_feature(&num_tex2d, sizeof(size_t));
 		sig.push_feature(&num_tex3d, sizeof(size_t));
+		sig.push_feature(&num_cubemap, sizeof(size_t));
 
 		if (m_verbose)
 		{
@@ -34,6 +34,7 @@ namespace VkInline
 		saxpy += "layout(binding = 10, set = 0) uniform accelerationStructureEXT arr_tlas[];\n";
 		saxpy += "layout(binding = 1) uniform sampler2D arr_tex2d[];\n";
 		saxpy += "layout(binding = 2) uniform sampler3D arr_tex3d[];\n";
+		saxpy += "layout(binding = 3) uniform samplerCube arr_cubemap[];\n";
 
 		for (size_t i = 0; i < m_code_blocks.size(); i++)
 		{
@@ -343,14 +344,16 @@ namespace VkInline
 			}
 		}
 
-		Internal::RayTracePipeline* pipeline = new Internal::RayTracePipeline(spv_raygen, p_spv_miss, p_hit, maxRecursionDepth, num_tlas, num_tex2d, num_tex3d);
+		Internal::RayTracePipeline* pipeline = new Internal::RayTracePipeline(spv_raygen, p_spv_miss, p_hit, maxRecursionDepth, num_tlas, num_tex2d, num_tex3d, num_cubemap);
 		m_cache_raytrace_pipelines.push_back(pipeline);
 		kid = (unsigned)m_cache_raytrace_pipelines.size() - 1;
 		m_map_raytrace_pipelines[hash_pipeline] = kid;
 		return kid;
 	}
 
-	bool Context::launch_raytrace(dim_type glbDim, size_t num_params, const ShaderViewable** args, TopLevelAS* const* arr_tlas, Texture2D* const * tex2ds, Texture3D* const * tex3ds, unsigned kid, const size_t* offsets, size_t times_submission)
+	bool Context::launch_raytrace(dim_type glbDim, size_t num_params, const ShaderViewable** args, 
+		TopLevelAS* const* arr_tlas,  Texture2D* const * tex2ds, Texture3D* const * tex3ds, Cubemap* const* cubemaps, 
+		unsigned kid, const size_t* offsets, size_t times_submission)
 	{
 		Internal::RayTracePipeline* pipeline;
 		{
@@ -389,7 +392,11 @@ namespace VkInline
 		for (size_t i = 0; i < i_tex3ds.size(); i++)
 			i_tex3ds[i] = tex3ds[i]->internal();
 
-		cmdBuf->trace(h_uniform.data(), i_tlas.data(), i_tex2ds.data(), i_tex3ds.data(), glbDim.x, glbDim.y, glbDim.z);
+		std::vector<Internal::TextureCube*> i_cubemaps(pipeline->num_cubemap());
+		for (size_t i = 0; i < i_cubemaps.size(); i++)
+			i_cubemaps[i] = cubemaps[i]->internal();
+
+		cmdBuf->trace(h_uniform.data(), i_tlas.data(), i_tex2ds.data(), i_tex3ds.data(), i_cubemaps.data(), glbDim.x, glbDim.y, glbDim.z);
 
 		const Internal::Context* ctx = Internal::Context::get_context();
 		ctx->SubmitCommandBuffer(cmdBuf, times_submission);
@@ -397,10 +404,11 @@ namespace VkInline
 		return true;
 	}
 
-	bool Context::launch_raytrace(dim_type glbDim, const std::vector<CapturedShaderViewable>& arg_map, unsigned maxRecursionDepth, const std::vector<TopLevelAS*>& arr_tlas, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds,
+	bool Context::launch_raytrace(dim_type glbDim, const std::vector<CapturedShaderViewable>& arg_map, unsigned maxRecursionDepth, 
+		const std::vector<TopLevelAS*>& arr_tlas, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, const std::vector<Cubemap*>& cubemaps,
 		const char* body_raygen, const std::vector<const char*>& body_miss, const std::vector<const BodyHitShaders*>& body_hit, size_t times_submission)
 	{
-		unsigned kid = _build_raytrace_pipeline(arg_map, maxRecursionDepth, arr_tlas.size(), tex2ds.size(), tex3ds.size(), body_raygen, body_miss, body_hit);
+		unsigned kid = _build_raytrace_pipeline(arg_map, maxRecursionDepth, arr_tlas.size(), tex2ds.size(), tex3ds.size(), cubemaps.size(), body_raygen, body_miss, body_hit);
 		if (kid == (unsigned)(-1)) return false;
 
 		// query uniform
@@ -432,13 +440,14 @@ namespace VkInline
 			args[i] = arg_map[i].obj;
 		}
 
-		return launch_raytrace(glbDim, arg_map.size(), args.data(), arr_tlas.data(), tex2ds.data(), tex3ds.data(), kid, offsets.data(), times_submission);
+		return launch_raytrace(glbDim, arg_map.size(), args.data(), arr_tlas.data(), tex2ds.data(), tex3ds.data(), cubemaps.data(), kid, offsets.data(), times_submission);
 	}
 
-	bool Context::launch_raytrace(dim_type glbDim, const std::vector<CapturedShaderViewable>& arg_map, unsigned maxRecursionDepth, const std::vector<TopLevelAS*>& arr_tlas, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds,
+	bool Context::launch_raytrace(dim_type glbDim, const std::vector<CapturedShaderViewable>& arg_map, unsigned maxRecursionDepth, 
+		const std::vector<TopLevelAS*>& arr_tlas, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, const std::vector<Cubemap*>& cubemaps,
 		const char* body_raygen, const std::vector<const char*>& body_miss, const std::vector<const BodyHitShaders*>& body_hit, unsigned& kid, size_t* offsets, size_t times_submission)
 	{
-		kid = _build_raytrace_pipeline(arg_map, maxRecursionDepth, arr_tlas.size(), tex2ds.size(), tex3ds.size(), body_raygen, body_miss, body_hit);
+		kid = _build_raytrace_pipeline(arg_map, maxRecursionDepth, arr_tlas.size(), tex2ds.size(), tex3ds.size(), cubemaps.size(), body_raygen, body_miss, body_hit);
 		if (kid == (unsigned)(-1)) return false;
 
 		// query uniform
@@ -469,7 +478,7 @@ namespace VkInline
 			args[i] = arg_map[i].obj;
 		}
 
-		return launch_raytrace(glbDim, arg_map.size(), args.data(), arr_tlas.data(), tex2ds.data(), tex3ds.data(), kid, offsets, times_submission);
+		return launch_raytrace(glbDim, arg_map.size(), args.data(), arr_tlas.data(), tex2ds.data(), tex3ds.data(), cubemaps.data(), kid, offsets, times_submission);
 	}
 }
 

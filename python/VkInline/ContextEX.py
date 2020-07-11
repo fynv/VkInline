@@ -72,12 +72,13 @@ class RayTracer:
     def num_params(self):
         return native.n_raytracer_num_params(self.m_cptr)
 
-    def launch(self, glbDim, args, lst_tlas, tex2ds=[], tex3ds=[], times_submission = 1):
+    def launch(self, glbDim, args, lst_tlas, tex2ds=[], tex3ds=[], cubemaps=[], times_submission = 1):
         d_glbDim = Dim3(glbDim)
         arg_list = ObjArray(args)
         tlas_list = ObjArray(lst_tlas)
         tex2d_list = ObjArray(tex2ds)
         tex3d_list = ObjArray(tex3ds)
+        cubemap_list = ObjArray(cubemaps)
         native.n_raytracer_launch(
             self.m_cptr, 
             d_glbDim.m_cptr,         
@@ -85,6 +86,7 @@ class RayTracer:
             tlas_list.m_cptr,
             tex2d_list.m_cptr,
             tex3d_list.m_cptr,
+            cubemap_list.m_cptr,
             times_submission)
 
 

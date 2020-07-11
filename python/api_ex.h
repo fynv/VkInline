@@ -12,6 +12,6 @@ extern "C"
 	PY_VkInline_API void* n_raytracer_create(void* ptr_param_list, const char* body_raygen, void* ptr_body_miss, void* ptr_body_hit, unsigned maxRecursionDepth, unsigned type_locked);
 	PY_VkInline_API void n_raytracer_destroy(void* cptr);
 	PY_VkInline_API int n_raytracer_num_params(void* cptr);
-	PY_VkInline_API int n_raytracer_launch(void* ptr_raytracer, void* ptr_glbDim, void* ptr_arg_list, void* ptr_tlas_list, void* ptr_tex2d_list, void* ptr_tex3d_list, unsigned times_submission);
+	PY_VkInline_API int n_raytracer_launch(void* ptr_raytracer, void* ptr_glbDim, void* ptr_arg_list, void* ptr_tlas_list, void* ptr_tex2d_list, void* ptr_tex3d_list, void* ptr_cubemap_list, unsigned times_submission);
 }
 

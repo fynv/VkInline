@@ -13,6 +13,7 @@ namespace VkInline
 	{
 		class Texture2D;
 		class Texture3D;
+		class TextureCube;
 		class CommandBufferRecycler;
 		struct GraphicsPipelineStates;
 	}
@@ -82,12 +83,35 @@ namespace VkInline
 		Internal::Texture3D* m_tex;
 	};
 
+	class Cubemap
+	{
+	public:
+		int width() const;
+		int height() const;
+		unsigned pixel_size() const;
+		unsigned channel_count() const;
+		unsigned vkformat() const;
+
+		Internal::TextureCube* internal() { return m_tex; }
+		const Internal::TextureCube* internal() const { return m_tex; }
+
+		Cubemap(int width, int height, unsigned vkformat);
+		~Cubemap();
+
+		void upload(const void* hdata);
+		void download(void* hdata) const;
+
+	private:
+		Internal::TextureCube* m_tex;
+	};
+
 	class Computer
 	{
 	public:
 		size_t num_params() const { return m_param_names.size(); }
 		Computer(const std::vector<const char*>& param_names, const char* code_body, bool type_locked = false);
-		bool launch(dim_type gridDim, dim_type blockDim, const ShaderViewable** args, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, size_t times_submission = 1);
+		bool launch(dim_type gridDim, dim_type blockDim, const ShaderViewable** args, 
+			const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, const std::vector<Cubemap*>& cubemaps, size_t times_submission = 1);
 
 	private:
 		std::vector<std::string> m_param_names;
@@ -192,8 +216,9 @@ namespace VkInline
 			SVBuffer* indBuf;
 		};
 
-		bool launch(const std::vector<Texture2D*>& colorBufs, Texture2D* depthBuf, const std::vector<Texture2D*>& resolveBufs, float* clear_colors, float clear_depth,
-			const ShaderViewable** args, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, Rasterizer::LaunchParam** launch_params, size_t times_submission = 1);
+		bool launch(const std::vector<Texture2D*>& colorBufs, Texture2D* depthBuf, const std::vector<Texture2D*>& resolveBufs, float* clear_colors, float clear_depth, const ShaderViewable** args, 
+			const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, const std::vector<Cubemap*>& cubemaps,
+			Rasterizer::LaunchParam** launch_params, size_t times_submission = 1);
 
 	private:
 		std::vector<std::string> m_param_names;

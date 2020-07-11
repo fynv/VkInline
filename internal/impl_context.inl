@@ -100,6 +100,7 @@ namespace VkInline
 
 		saxpy += "layout(binding = 1) uniform sampler2D arr_tex2d[];\n";
 		saxpy += "layout(binding = 2) uniform sampler3D arr_tex3d[];\n";
+		saxpy += "layout(binding = 3) uniform samplerCube arr_cubemap[];\n";
 
 		for (size_t i = 0; i < m_code_blocks.size(); i++)
 		{
@@ -204,6 +205,7 @@ namespace VkInline
 
 		saxpy += "layout(binding = 1) uniform sampler2D arr_tex2d[];\n";
 		saxpy += "layout(binding = 2) uniform sampler3D arr_tex3d[];\n";
+		saxpy += "layout(binding = 3) uniform samplerCube arr_cubemap[];\n";
 
 		for (size_t i = 0; i < m_code_blocks.size(); i++)
 		{
@@ -369,11 +371,12 @@ namespace VkInline
 
 	};
 
-	unsigned Context::_build_compute_pipeline(dim_type blockDim, const std::vector<CapturedShaderViewable>& arg_map, size_t num_tex2d, size_t num_tex3d, const char* code_body)
+	unsigned Context::_build_compute_pipeline(dim_type blockDim, const std::vector<CapturedShaderViewable>& arg_map, size_t num_tex2d, size_t num_tex3d, size_t num_cubemap, const char* code_body)
 	{
 		Signature sig;
 		sig.push_feature(&num_tex2d, sizeof(size_t));
 		sig.push_feature(&num_tex3d, sizeof(size_t));
+		sig.push_feature(&num_cubemap, sizeof(size_t));
 
 		std::string saxpy =
 			"#version 460\n"
@@ -385,6 +388,7 @@ namespace VkInline
 
 		saxpy += "layout(binding = 1) uniform sampler2D arr_tex2d[];\n";
 		saxpy += "layout(binding = 2) uniform sampler3D arr_tex3d[];\n";
+		saxpy += "layout(binding = 3) uniform samplerCube arr_cubemap[];\n";
 
 		for (size_t i = 0; i < m_code_blocks.size(); i++)
 		{
@@ -480,7 +484,7 @@ namespace VkInline
 			}
 		}
 
-		Internal::ComputePipeline* pipeline = new Internal::ComputePipeline(spv, num_tex2d, num_tex3d);
+		Internal::ComputePipeline* pipeline = new Internal::ComputePipeline(spv, num_tex2d, num_tex3d, num_cubemap);
 		m_cache_compute_pipelines.push_back(pipeline);
 		kid = (unsigned)m_cache_compute_pipelines.size() - 1;
 		m_map_compute_pipelines[hash_pipeline] = kid;
@@ -488,7 +492,8 @@ namespace VkInline
 		return kid;
 	}
 
-	bool Context::launch_compute(dim_type gridDim, size_t num_params, const ShaderViewable** args, Texture2D* const* tex2ds, Texture3D* const* tex3ds, unsigned kid, const size_t* offsets, size_t times_submission)
+	bool Context::launch_compute(dim_type gridDim, size_t num_params, const ShaderViewable** args, 
+		Texture2D* const* tex2ds, Texture3D* const* tex3ds, Cubemap* const* cubemaps, unsigned kid, const size_t* offsets, size_t times_submission)
 	{
 		Internal::ComputePipeline* pipeline;
 		{
@@ -523,7 +528,11 @@ namespace VkInline
 		for (size_t i = 0; i < pipeline->num_tex3d(); i++)
 			i_tex3ds[i] = tex3ds[i]->internal();
 
-		cmdBuf->dispatch(h_uniform.data(), i_tex2ds.data(), i_tex3ds.data(), gridDim.x, gridDim.y, gridDim.z);
+		std::vector<Internal::TextureCube*> i_cubemaps(pipeline->num_cubemap());
+		for (size_t i = 0; i < pipeline->num_cubemap(); i++)
+			i_cubemaps[i] = cubemaps[i]->internal();
+
+		cmdBuf->dispatch(h_uniform.data(), i_tex2ds.data(), i_tex3ds.data(), i_cubemaps.data(), gridDim.x, gridDim.y, gridDim.z);
 
 		const Internal::Context* ctx = Internal::Context::get_context();
 		ctx->SubmitCommandBuffer(cmdBuf, times_submission);
@@ -531,9 +540,10 @@ namespace VkInline
 		return true;
 	}
 
-	bool Context::launch_compute(dim_type gridDim, dim_type blockDim, const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, const char* code_body, size_t times_submission)
+	bool Context::launch_compute(dim_type gridDim, dim_type blockDim, const std::vector<CapturedShaderViewable>& arg_map, 
+		const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, const std::vector<Cubemap*>& cubemaps, const char* code_body, size_t times_submission)
 	{
-		unsigned kid = _build_compute_pipeline(blockDim, arg_map, tex2ds.size(), tex3ds.size(), code_body);
+		unsigned kid = _build_compute_pipeline(blockDim, arg_map, tex2ds.size(), tex3ds.size(), cubemaps.size(), code_body);
 		if (kid == (unsigned)(-1)) return false;
 		
 		// query uniform
@@ -566,12 +576,13 @@ namespace VkInline
 			args[i] = arg_map[i].obj;
 		}
 
-		return launch_compute(gridDim, arg_map.size(), args.data(), tex2ds.data(), tex3ds.data(), kid, offsets.data(), times_submission);
+		return launch_compute(gridDim, arg_map.size(), args.data(), tex2ds.data(), tex3ds.data(), cubemaps.data(), kid, offsets.data(), times_submission);
 	}
 
-	bool Context::launch_compute(dim_type gridDim, dim_type blockDim, const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, const char* code_body, unsigned& kid, size_t* offsets, size_t times_submission)
+	bool Context::launch_compute(dim_type gridDim, dim_type blockDim, const std::vector<CapturedShaderViewable>& arg_map, 
+		const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, const std::vector<Cubemap*>& cubemaps, const char* code_body, unsigned& kid, size_t* offsets, size_t times_submission)
 	{
-		kid = _build_compute_pipeline(blockDim, arg_map, tex2ds.size(), tex3ds.size(), code_body);
+		kid = _build_compute_pipeline(blockDim, arg_map, tex2ds.size(), tex3ds.size(), cubemaps.size(), code_body);
 		if (kid == (unsigned)(-1)) return false;
 
 		// query uniform
@@ -602,16 +613,17 @@ namespace VkInline
 			args[i] = arg_map[i].obj;
 		}
 
-		return launch_compute(gridDim, arg_map.size(), args.data(), tex2ds.data(), tex3ds.data(), kid, offsets, times_submission);
+		return launch_compute(gridDim, arg_map.size(), args.data(), tex2ds.data(), tex3ds.data(), cubemaps.data(), kid, offsets, times_submission);
 	}
 
 	unsigned Context::_build_render_pass(
 		const std::vector <Internal::AttachmentInfo>& color_attachmentInfo, const Internal::AttachmentInfo* depth_attachmentInfo, const std::vector <Internal::AttachmentInfo>& resolve_attachmentInfo,
-		const std::vector<CapturedShaderViewable>& arg_map, size_t num_tex2d, size_t num_tex3d, const std::vector<const DrawCall*>& draw_calls)
+		const std::vector<CapturedShaderViewable>& arg_map, size_t num_tex2d, size_t num_tex3d, size_t num_cubemap, const std::vector<const DrawCall*>& draw_calls)
 	{
 		Signature sig;
 		sig.push_feature(&num_tex2d, sizeof(size_t));
 		sig.push_feature(&num_tex3d, sizeof(size_t));
+		sig.push_feature(&num_cubemap, sizeof(size_t));
 
 		for (size_t i = 0; i < color_attachmentInfo.size(); i++)
 			sig.push_feature(&color_attachmentInfo[i], sizeof(Internal::AttachmentInfo));
@@ -636,6 +648,7 @@ namespace VkInline
 
 		saxpy += "layout(binding = 1) uniform sampler2D arr_tex2d[];\n";
 		saxpy += "layout(binding = 2) uniform sampler3D arr_tex3d[];\n";
+		saxpy += "layout(binding = 3) uniform samplerCube arr_cubemap[];\n";
 
 		for (size_t i = 0; i < m_code_blocks.size(); i++)
 		{
@@ -808,7 +821,7 @@ namespace VkInline
 			pipelineInfo[i].states.colorBlending.attachmentCount = (unsigned)color_attachmentInfo.size();
 		}
 
-		Internal::RenderPass* renderpass = new Internal::RenderPass(color_attachmentInfo, depth_attachmentInfo, resolve_attachmentInfo, pipelineInfo, num_tex2d, num_tex3d);
+		Internal::RenderPass* renderpass = new Internal::RenderPass(color_attachmentInfo, depth_attachmentInfo, resolve_attachmentInfo, pipelineInfo, num_tex2d, num_tex3d, num_cubemap);
 		m_cache_render_passes.push_back(renderpass);
 		rpid = (unsigned)m_cache_render_passes.size() - 1;
 		m_map_render_passes[hash_render_pass] = rpid;
@@ -817,7 +830,8 @@ namespace VkInline
 	}
 
 	bool Context::launch_rasterization(Texture2D* const* colorBufs, Texture2D* depthBuf, Texture2D* const* resolveBufs, float* clear_colors, float clear_depth,
-		size_t num_params, const ShaderViewable** args, Texture2D* const* tex2ds, Texture3D* const* tex3ds, Rasterizer::LaunchParam** launch_params, unsigned rpid, const size_t* offsets, size_t times_submission)
+		size_t num_params, const ShaderViewable** args, Texture2D* const* tex2ds, Texture3D* const* tex3ds, Cubemap* const* cubemaps,
+		Rasterizer::LaunchParam** launch_params, unsigned rpid, const size_t* offsets, size_t times_submission)
 	{
 		Internal::RenderPass* renderpass;
 		{
@@ -863,6 +877,10 @@ namespace VkInline
 		std::vector<Internal::Texture3D*> i_tex3ds(renderpass->num_tex3d());
 		for (size_t i = 0; i < i_tex3ds.size(); i++)
 			i_tex3ds[i] = tex3ds[i]->internal();
+
+		std::vector<Internal::TextureCube*> i_cubemaps(renderpass->num_cubemap());
+		for (size_t i = 0; i < i_cubemaps.size(); i++)
+			i_cubemaps[i] = cubemaps[i]->internal();
 		
 		std::vector<Internal::RenderPassCommandBuffer::DrawParam> dps(renderpass->num_pipelines()); 
 		for (size_t i = 0; i < renderpass->num_pipelines(); i++)
@@ -878,7 +896,7 @@ namespace VkInline
 			}
 		}
 			 
-		cmdBuf->draw(tex_colorBufs.data(), tex_depthBuf, tex_resolveBufs.data(), clear_colors, clear_depth, h_uniform.data(), i_tex2ds.data(), i_tex3ds.data(), dps.data());
+		cmdBuf->draw(tex_colorBufs.data(), tex_depthBuf, tex_resolveBufs.data(), clear_colors, clear_depth, h_uniform.data(), i_tex2ds.data(), i_tex3ds.data(), i_cubemaps.data(), dps.data());
 
 		const Internal::Context* ctx = Internal::Context::get_context();
 		ctx->SubmitCommandBuffer(cmdBuf, times_submission);
@@ -887,7 +905,8 @@ namespace VkInline
 	}
 
 	bool Context::launch_rasterization(const std::vector<Attachement>& colorBufs, Attachement depthBuf, const std::vector<Attachement>& resolveBufs, float* clear_colors, float clear_depth,
-		const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, const std::vector<const DrawCall*>& draw_calls, Rasterizer::LaunchParam** launch_params, size_t times_submission)
+		const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, const std::vector<Cubemap*>& cubemaps,
+		const std::vector<const DrawCall*>& draw_calls, Rasterizer::LaunchParam** launch_params, size_t times_submission)
 	{
 		std::vector <Internal::AttachmentInfo> color_attachmentInfo(colorBufs.size());
 		std::vector <Texture2D*> tex_colorBufs(colorBufs.size());
@@ -921,7 +940,7 @@ namespace VkInline
 			tex_resolveBufs[i] = resolveBufs[i].tex;
 		}
 
-		unsigned rpid = _build_render_pass(color_attachmentInfo, p_depth_attachmentInfo, resolve_attachmentInfo, arg_map, tex2ds.size(), tex3ds.size(), draw_calls);
+		unsigned rpid = _build_render_pass(color_attachmentInfo, p_depth_attachmentInfo, resolve_attachmentInfo, arg_map, tex2ds.size(), tex3ds.size(), cubemaps.size(), draw_calls);
 		if (rpid == (unsigned)(-1)) return false;
 	
 		// query uniform
@@ -953,11 +972,13 @@ namespace VkInline
 			args[i] = arg_map[i].obj;
 		}
 
-		return launch_rasterization(tex_colorBufs.data(), tex_depthBuf, tex_resolveBufs.data(), clear_colors, clear_depth, arg_map.size(), args.data(), tex2ds.data(), tex3ds.data(), launch_params, rpid, offsets.data(), times_submission);
+		return launch_rasterization(tex_colorBufs.data(), tex_depthBuf, tex_resolveBufs.data(), clear_colors, clear_depth, arg_map.size(), args.data(), 
+			tex2ds.data(), tex3ds.data(), cubemaps.data(), launch_params, rpid, offsets.data(), times_submission);
 	}
 
 	bool Context::launch_rasterization(const std::vector<Attachement>& colorBufs, Attachement depthBuf, const std::vector<Attachement>& resolveBufs, float* clear_colors, float clear_depth,
-		const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, const std::vector<const DrawCall*>& draw_calls, Rasterizer::LaunchParam** launch_params, unsigned& rpid, size_t* offsets, size_t times_submission)
+		const std::vector<CapturedShaderViewable>& arg_map, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, const std::vector<Cubemap*>& cubemaps,
+		const std::vector<const DrawCall*>& draw_calls, Rasterizer::LaunchParam** launch_params, unsigned& rpid, size_t* offsets, size_t times_submission)
 	{
 		std::vector <Internal::AttachmentInfo> color_attachmentInfo(colorBufs.size());
 		std::vector <Texture2D*> tex_colorBufs(colorBufs.size());
@@ -991,7 +1012,7 @@ namespace VkInline
 			tex_resolveBufs[i] = resolveBufs[i].tex;
 		}
 
-		rpid = _build_render_pass(color_attachmentInfo, p_depth_attachmentInfo, resolve_attachmentInfo, arg_map, tex2ds.size(), tex3ds.size(), draw_calls);
+		rpid = _build_render_pass(color_attachmentInfo, p_depth_attachmentInfo, resolve_attachmentInfo, arg_map, tex2ds.size(), tex3ds.size(), cubemaps.size(), draw_calls);
 		if (rpid == (unsigned)(-1)) return false;
 
 		// query uniform
@@ -1022,7 +1043,8 @@ namespace VkInline
 			args[i] = arg_map[i].obj;
 		}
 
-		return launch_rasterization(tex_colorBufs.data(), tex_depthBuf, tex_resolveBufs.data(), clear_colors, clear_depth, arg_map.size(), args.data(), tex2ds.data(), tex3ds.data(), launch_params, rpid, offsets, times_submission);
+		return launch_rasterization(tex_colorBufs.data(), tex_depthBuf, tex_resolveBufs.data(), clear_colors, clear_depth, arg_map.size(), args.data(), 
+			tex2ds.data(), tex3ds.data(), cubemaps.data(), launch_params, rpid, offsets, times_submission);
 	}
 }
 

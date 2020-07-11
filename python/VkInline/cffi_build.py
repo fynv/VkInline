@@ -32,7 +32,8 @@ void n_wait();
 void* n_computer_create(void* ptr_param_list, const char* body, unsigned type_locked);
 void n_computer_destroy(void* cptr);
 int n_computer_num_params(void* cptr);
-int n_computer_launch(void* ptr_kernel, void* ptr_gridDim, void* ptr_blockDim, void* ptr_arg_list, void* ptr_tex2d_list, void* ptr_tex3d_list, unsigned times_submission);
+int n_computer_launch(void* ptr_kernel, void* ptr_gridDim, void* ptr_blockDim, void* ptr_arg_list, 
+		void* ptr_tex2d_list, void* ptr_tex3d_list, void* ptr_cubemap_list, unsigned times_submission);
 
 void* n_drawcall_create(const char* code_body_vert, const char* code_body_frag);
 void n_drawcall_destroy(void* cptr);
@@ -82,7 +83,8 @@ void n_rasterizer_set_clear_color_buf(void* cptr, int i, unsigned clear);
 void n_rasterizer_set_clear_depth_buf(void* cptr, unsigned clear);
 void n_rasterizer_add_draw_call(void* cptr, void* draw_call);
 int n_rasterizer_launch(void* cptr, void* ptr_colorBufs, void* _depthBuf, void* ptr_resolveBufs, 
-		float* clear_colors, float clear_depth,	void* ptr_arg_list, void* ptr_tex2d_list, void* ptr_tex3d_list, void** ptr_launch_params, unsigned times_submission);
+		float* clear_colors, float clear_depth,	void* ptr_arg_list, void* ptr_tex2d_list, void* ptr_tex3d_list, void* ptr_cubemap_list,
+		void** ptr_launch_params, unsigned times_submission);
 
 // ShaderViewable
 const char* n_sv_name_view_type(void* cptr);
@@ -204,6 +206,17 @@ unsigned n_texture3d_vkformat(void* tex3d);
 void n_texture3d_upload(void* tex3d, void* hdata);
 void n_texture3d_download(void* tex3d, void* hdata);
 
+// Cubemap
+void* n_cubemap_create(int width, int height, unsigned vkformat);
+void n_cubemap_release(void* cubemap);
+int n_cubemap_width(void* cubemap);
+int n_cubemap_height(void* cubemap);
+unsigned n_cubemap_pixelsize(void* cubemap);
+unsigned n_cubemap_channelcount(void* cubemap);
+unsigned n_cubemap_vkformat(void* cubemap);
+void n_cubemap_upload(void* cubemap, void* hdata);
+void n_cubemap_download(void* cubemap, void* hdata);
+
 // Extensions
 void* n_blas_create_triangles(void* indBuf, void* posBuf);
 void* n_blas_create_procedure(void* aabbBuf);
@@ -217,7 +230,7 @@ void n_hit_shaders_destroy(void* ptr);
 void* n_raytracer_create(void* ptr_param_list, const char* body_raygen, void* ptr_body_miss, void* ptr_body_hit, unsigned maxRecursionDepth, unsigned type_locked);
 void n_raytracer_destroy(void* cptr);
 int n_raytracer_num_params(void* cptr);
-int n_raytracer_launch(void* ptr_raytracer, void* ptr_glbDim, void* ptr_arg_list, void* ptr_tlas_list, void* ptr_tex2d_list, void* ptr_tex3d_list, unsigned times_submission);
+int n_raytracer_launch(void* ptr_raytracer, void* ptr_glbDim, void* ptr_arg_list, void* ptr_tlas_list, void* ptr_tex2d_list, void* ptr_tex3d_list, void* ptr_cubemap_list, unsigned times_submission);
 """)
 
 

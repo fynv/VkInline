@@ -89,7 +89,7 @@ int n_raytracer_num_params(void* cptr)
 	return (int)raytracer->num_params();
 }
 
-int n_raytracer_launch(void* ptr_raytracer, void* ptr_glbDim, void* ptr_arg_list, void* ptr_tlas_list, void* ptr_tex2d_list, void* ptr_tex3d_list, unsigned times_submission)
+int n_raytracer_launch(void* ptr_raytracer, void* ptr_glbDim, void* ptr_arg_list, void* ptr_tlas_list, void* ptr_tex2d_list, void* ptr_tex3d_list, void* ptr_cubemap_list, unsigned times_submission)
 {
 	RayTracer* raytracer = (RayTracer*)ptr_raytracer;
 	size_t num_params = raytracer->num_params();
@@ -100,6 +100,7 @@ int n_raytracer_launch(void* ptr_raytracer, void* ptr_glbDim, void* ptr_arg_list
 	std::vector<TopLevelAS*>* tlas_list = (std::vector<TopLevelAS*>*)ptr_tlas_list;
 	Tex2DArray* tex2d_list = (Tex2DArray*)ptr_tex2d_list;
 	Tex3DArray* tex3d_list = (Tex3DArray*)ptr_tex3d_list;
+	CubemapArray* cubemap_list = (CubemapArray*)ptr_cubemap_list;
 
 	size_t size = arg_list->size();
 	if (num_params != size)
@@ -108,7 +109,7 @@ int n_raytracer_launch(void* ptr_raytracer, void* ptr_glbDim, void* ptr_arg_list
 		return -1;
 	}
 
-	if (raytracer->launch(*glbDim, arg_list->data(), *tlas_list, *tex2d_list, *tex3d_list, times_submission))
+	if (raytracer->launch(*glbDim, arg_list->data(), *tlas_list, *tex2d_list, *tex3d_list, *cubemap_list, times_submission))
 		return 0;
 	else
 		return -1;

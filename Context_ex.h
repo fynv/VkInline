@@ -68,7 +68,8 @@ namespace VkInline
 	public:
 		size_t num_params() const { return m_param_names.size(); }
 		RayTracer(const std::vector<const char*>& param_names, const char* body_raygen, const std::vector<const char*>& body_miss, const std::vector<const BodyHitShaders*>& body_hit, unsigned maxRecursionDepth, bool type_locked = false);
-		bool launch(dim_type glbDim, const ShaderViewable** args, const std::vector<TopLevelAS*>& arr_tlas, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, size_t times_submission = 1);
+		bool launch(dim_type glbDim, const ShaderViewable** args, const std::vector<TopLevelAS*>& arr_tlas, 
+			const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, const std::vector<Cubemap*>& cubemaps, size_t times_submission = 1);
 
 	private:
 		std::vector<std::string> m_param_names;

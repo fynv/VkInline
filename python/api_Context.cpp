@@ -8,6 +8,7 @@ typedef std::vector<std::string> StrArray;
 typedef std::vector<const ShaderViewable*> PtrArray;
 typedef std::vector<Texture2D*> Tex2DArray;
 typedef std::vector<Texture3D*> Tex3DArray;
+typedef std::vector<Cubemap*> CubemapArray;
 
 int n_vkinline_try_init()
 {
@@ -66,7 +67,8 @@ int n_computer_num_params(void* cptr)
 }
 
 
-int n_computer_launch(void* ptr_kernel, void* ptr_gridDim, void* ptr_blockDim, void* ptr_arg_list, void* ptr_tex2d_list, void* ptr_tex3d_list, unsigned times_submission)
+int n_computer_launch(void* ptr_kernel, void* ptr_gridDim, void* ptr_blockDim, void* ptr_arg_list, 
+	void* ptr_tex2d_list, void* ptr_tex3d_list, void* ptr_cubemap_list, unsigned times_submission)
 {
 	Computer* kernel = (Computer*)ptr_kernel;
 	size_t num_params = kernel->num_params();
@@ -77,6 +79,7 @@ int n_computer_launch(void* ptr_kernel, void* ptr_gridDim, void* ptr_blockDim, v
 	PtrArray* arg_list = (PtrArray*)ptr_arg_list;
 	Tex2DArray* tex2d_list = (Tex2DArray*)ptr_tex2d_list;
 	Tex3DArray* tex3d_list = (Tex3DArray*)ptr_tex3d_list;
+	CubemapArray* cubemap_list = (CubemapArray*)ptr_cubemap_list;
 
 	size_t size = arg_list->size();
 	if (num_params != size)
@@ -85,7 +88,7 @@ int n_computer_launch(void* ptr_kernel, void* ptr_gridDim, void* ptr_blockDim, v
 		return -1;
 	}
 
-	if (kernel->launch(*gridDim, *blockDim, arg_list->data(), *tex2d_list, *tex3d_list, times_submission))
+	if (kernel->launch(*gridDim, *blockDim, arg_list->data(), *tex2d_list, *tex3d_list, *cubemap_list, times_submission))
 		return 0;
 	else
 		return -1;
@@ -347,7 +350,8 @@ void n_rasterizer_add_draw_call(void* cptr, void* draw_call)
 }
 
 int n_rasterizer_launch(void* cptr, void* ptr_colorBufs, void* _depthBuf, void* ptr_resolveBufs, 
-	float* clear_colors, float clear_depth,	void* ptr_arg_list, void* ptr_tex2d_list, void* ptr_tex3d_list, void** ptr_launch_params, unsigned times_submission)
+	float* clear_colors, float clear_depth,	void* ptr_arg_list, void* ptr_tex2d_list, void* ptr_tex3d_list, void* ptr_cubemap_list,
+	void** ptr_launch_params, unsigned times_submission)
 {
 	Rasterizer* rasterizer = (Rasterizer*)cptr;
 	Tex2DArray* colorBufs = (Tex2DArray*)ptr_colorBufs;
@@ -356,9 +360,10 @@ int n_rasterizer_launch(void* cptr, void* ptr_colorBufs, void* _depthBuf, void* 
 	PtrArray* arg_list = (PtrArray*)ptr_arg_list;
 	Tex2DArray* tex2d_list = (Tex2DArray*)ptr_tex2d_list;
 	Tex3DArray* tex3d_list = (Tex3DArray*)ptr_tex3d_list;
+	CubemapArray* cubemap_list = (CubemapArray*)ptr_cubemap_list;
 	Rasterizer::LaunchParam** launch_params = (Rasterizer::LaunchParam**)ptr_launch_params;
 
-	if (rasterizer->launch(*colorBufs, depthBuf, *resolveBufs, clear_colors, clear_depth, arg_list->data(), *tex2d_list, *tex3d_list, launch_params, times_submission))
+	if (rasterizer->launch(*colorBufs, depthBuf, *resolveBufs, clear_colors, clear_depth, arg_list->data(), *tex2d_list, *tex3d_list, *cubemap_list, launch_params, times_submission))
 		return 0;
 	else
 		return -1;

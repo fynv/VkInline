@@ -218,7 +218,7 @@ namespace VkInline
 		RayTracePipeline::RayTracePipeline(const std::vector<unsigned>& spv_raygen,
 			const std::vector<const std::vector<unsigned>*>& spv_miss,
 			const std::vector<HitShaders>& spv_hit,
-			unsigned maxRecursionDepth, size_t num_tlas, size_t num_tex2d, size_t num_tex3d)
+			unsigned maxRecursionDepth, size_t num_tlas, size_t num_tex2d, size_t num_tex3d, size_t num_cubemap)
 		{
 			m_sampler = nullptr;
 			const Context* ctx = Context::get_context();
@@ -373,7 +373,18 @@ namespace VkInline
 					descriptorSetLayoutBindings.push_back(binding_tex3d);
 				}
 
-				if (num_tex2d > 0 || num_tex3d > 0)
+				m_num_cubemap = num_cubemap;
+				if (num_cubemap > 0)
+				{
+					VkDescriptorSetLayoutBinding binding_cubemap = {};
+					binding_cubemap.binding = 3;
+					binding_cubemap.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+					binding_cubemap.descriptorCount = (unsigned)num_cubemap;
+					binding_cubemap.stageFlags = all_ray_trace_bits;
+					descriptorSetLayoutBindings.push_back(binding_cubemap);
+				}
+
+				if (num_tex2d > 0 || num_tex3d > 0 || num_cubemap > 0)
 				{
 					m_sampler = new Sampler;
 				}
@@ -570,7 +581,7 @@ namespace VkInline
 			m_pipeline->recycler()->RecycleCommandBuffer(this);
 		}
 
-		void RayTraceCommandBuffer::trace(void* param_data, TopLevelAS** arr_tlas, Texture2D** tex2ds, Texture3D** tex3ds, unsigned dim_x, unsigned dim_y, unsigned dim_z)
+		void RayTraceCommandBuffer::trace(void* param_data, TopLevelAS** arr_tlas, Texture2D** tex2ds, Texture3D** tex3ds, TextureCube** cubemaps, unsigned dim_x, unsigned dim_y, unsigned dim_z)
 		{
 			const Context* ctx = Context::get_context();
 			if (m_ubo != nullptr)
@@ -605,6 +616,16 @@ namespace VkInline
 				tex3ds[i]->apply_barrier(*this, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
 			}
 
+			std::vector<VkDescriptorImageInfo> cubemapInfos(m_pipeline->num_cubemap());
+			for (size_t i = 0; i < m_pipeline->num_cubemap(); ++i)
+			{
+				cubemapInfos[i] = {};
+				cubemapInfos[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+				cubemapInfos[i].imageView = cubemaps[i]->view();
+				cubemapInfos[i].sampler = m_pipeline->sampler()->sampler();
+				cubemaps[i]->apply_barrier(*this, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
+			}
+
 			std::vector<VkWriteDescriptorSet> list_wds;
 			if (v_tlas.size() > 0)
 			{
@@ -637,6 +658,17 @@ namespace VkInline
 				wds.descriptorCount = (uint32_t)m_pipeline->num_tex3d();
 				wds.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 				wds.pImageInfo = tex3dInfos.data();
+				list_wds.push_back(wds);
+			}
+			if (m_pipeline->num_cubemap() > 0)
+			{
+				VkWriteDescriptorSet wds = {};
+				wds.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				wds.dstSet = m_descriptorSet;
+				wds.dstBinding = 3;
+				wds.descriptorCount = (uint32_t)m_pipeline->num_cubemap();
+				wds.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				wds.pImageInfo = cubemapInfos.data();
 				list_wds.push_back(wds);
 			}
 

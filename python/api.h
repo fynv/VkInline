@@ -34,7 +34,8 @@ extern "C"
 	PY_VkInline_API void* n_computer_create(void* ptr_param_list, const char* body, unsigned type_locked);
 	PY_VkInline_API void n_computer_destroy(void* cptr);
 	PY_VkInline_API int n_computer_num_params(void* cptr);
-	PY_VkInline_API int n_computer_launch(void* ptr_kernel, void* ptr_gridDim, void* ptr_blockDim, void* ptr_arg_list, void* ptr_tex2d_list, void* ptr_tex3d_list, unsigned times_submission);
+	PY_VkInline_API int n_computer_launch(void* ptr_kernel, void* ptr_gridDim, void* ptr_blockDim, void* ptr_arg_list, 
+		void* ptr_tex2d_list, void* ptr_tex3d_list, void* ptr_cubemap_list, unsigned times_submission);
 
 	PY_VkInline_API void* n_drawcall_create(const char* code_body_vert, const char* code_body_frag);
 	PY_VkInline_API void n_drawcall_destroy(void* cptr);
@@ -84,7 +85,8 @@ extern "C"
 	PY_VkInline_API void n_rasterizer_set_clear_depth_buf(void* cptr, unsigned clear);
 	PY_VkInline_API void n_rasterizer_add_draw_call(void* cptr, void* draw_call);
 	PY_VkInline_API int n_rasterizer_launch(void* cptr, void* ptr_colorBufs, void* _depthBuf, void* ptr_resolveBufs, 
-		float* clear_colors, float clear_depth,	void* ptr_arg_list, void* ptr_tex2d_list, void* ptr_tex3d_list, void** ptr_launch_params, unsigned times_submission);
+		float* clear_colors, float clear_depth,	void* ptr_arg_list, void* ptr_tex2d_list, void* ptr_tex3d_list, void* ptr_cubemap_list,
+		void** ptr_launch_params, unsigned times_submission);
 
 	// ShaderViewable
 	PY_VkInline_API const char* n_sv_name_view_type(void* cptr);
@@ -205,6 +207,17 @@ extern "C"
 	PY_VkInline_API unsigned n_texture3d_vkformat(void* tex3d);
 	PY_VkInline_API void n_texture3d_upload(void* tex3d, void* hdata);
 	PY_VkInline_API void n_texture3d_download(void* tex3d, void* hdata);
+
+	// Cubemap
+	PY_VkInline_API void* n_cubemap_create(int width, int height, unsigned vkformat);
+	PY_VkInline_API void n_cubemap_release(void* cubemap);
+	PY_VkInline_API int n_cubemap_width(void* cubemap);
+	PY_VkInline_API int n_cubemap_height(void* cubemap);
+	PY_VkInline_API unsigned n_cubemap_pixelsize(void* cubemap);
+	PY_VkInline_API unsigned n_cubemap_channelcount(void* cubemap);
+	PY_VkInline_API unsigned n_cubemap_vkformat(void* cubemap);
+	PY_VkInline_API void n_cubemap_upload(void* cubemap, void* hdata);
+	PY_VkInline_API void n_cubemap_download(void* cubemap, void* hdata);
 
 }
 

@@ -9,4 +9,4 @@ from .SVVector import *
 from .SVObjVector import *
 from .Texture2D import *
 from .Texture3D import *
-
+from .Cubemap import *

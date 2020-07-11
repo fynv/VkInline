@@ -992,6 +992,196 @@ namespace VkInline
 			staging_buf.download(hdata);
 		}
 
+		unsigned TextureCube::pixel_size() const
+		{
+			return FormatElementSize(m_format, VK_IMAGE_ASPECT_COLOR_BIT);
+		}
+
+		unsigned TextureCube::channel_count() const
+		{
+			return FormatChannelCount(m_format);
+		}
+
+		TextureCube::TextureCube(int width, int height, VkFormat format)
+		{
+			m_width = width;
+			m_height = height;
+			m_format = format;
+			if (width == 0 || height == 0) return;
+
+			const Context* ctx = Context::get_context();
+
+			VkImageCreateInfo imageInfo = {};
+			imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+			imageInfo.imageType = VK_IMAGE_TYPE_2D;
+			imageInfo.extent.width = width;
+			imageInfo.extent.height = height;
+			imageInfo.extent.depth = 1;
+			imageInfo.mipLevels = 1;
+			imageInfo.arrayLayers = 6;
+			imageInfo.format = format;
+			imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+			imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+			imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+			imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			imageInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+
+			vkCreateImage(ctx->device(), &imageInfo, nullptr, &m_image);
+
+			VkMemoryRequirements memRequirements;
+			vkGetImageMemoryRequirements(ctx->device(), m_image, &memRequirements);
+
+			VkPhysicalDeviceMemoryProperties memProperties;
+			vkGetPhysicalDeviceMemoryProperties(ctx->physicalDevice(), &memProperties);
+
+			uint32_t memoryTypeIndex = VK_MAX_MEMORY_TYPES;
+			for (uint32_t k = 0; k < memProperties.memoryTypeCount; k++)
+			{
+				if ((memRequirements.memoryTypeBits & (1 << k)) == 0) continue;
+				if ((VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT & memProperties.memoryTypes[k].propertyFlags) == VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+				{
+					memoryTypeIndex = k;
+					break;
+				}
+			}
+
+			VkMemoryAllocateInfo allocInfo = {};
+			allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+			allocInfo.allocationSize = memRequirements.size;
+			allocInfo.memoryTypeIndex = memoryTypeIndex;
+
+			vkAllocateMemory(ctx->device(), &allocInfo, nullptr, &m_mem);
+			vkBindImageMemory(ctx->device(), m_image, m_mem, 0);
+
+			VkImageViewCreateInfo createInfo = {};
+			createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+			createInfo.image = m_image;
+			createInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+			createInfo.format = format;
+			createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			createInfo.subresourceRange.baseMipLevel = 0;
+			createInfo.subresourceRange.levelCount = 1;
+			createInfo.subresourceRange.baseArrayLayer = 0;
+			createInfo.subresourceRange.layerCount = 6;
+			vkCreateImageView(ctx->device(), &createInfo, nullptr, &m_view);
+
+			m_cur_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+			m_cur_access_mask = 0;
+		}
+
+		TextureCube::~TextureCube()
+		{
+			if (m_width == 0 || m_height == 0) return;
+			const Context* ctx = Context::get_context();
+			vkDestroyImageView(ctx->device(), m_view, nullptr);
+			vkDestroyImage(ctx->device(), m_image, nullptr);
+			vkFreeMemory(ctx->device(), m_mem, nullptr);
+		}
+
+		void TextureCube::apply_barrier(const CommandBuffer& cmdbuf, VkImageLayout newLayout, VkAccessFlags dstAccessMask, VkPipelineStageFlags dstStageMask) const
+		{
+			VkImageMemoryBarrier barrier = {};
+			barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+			barrier.oldLayout = m_cur_layout;
+			barrier.newLayout = newLayout;
+			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.image = m_image;
+			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			barrier.subresourceRange.baseMipLevel = 0;
+			barrier.subresourceRange.levelCount = 1;
+			barrier.subresourceRange.baseArrayLayer = 0;
+			barrier.subresourceRange.layerCount = 1;
+			barrier.srcAccessMask = m_cur_access_mask;
+			barrier.dstAccessMask = dstAccessMask;
+
+			vkCmdPipelineBarrier(
+				cmdbuf.buf(),
+				VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+				dstStageMask,
+				0,
+				0, nullptr,
+				0, nullptr,
+				1, &barrier
+			);
+
+			m_cur_layout = newLayout;
+			m_cur_access_mask = dstAccessMask;
+		}
+
+		class CommandBuf_CubeTexUpload : public AutoCommandBuffer
+		{
+		public:
+			CommandBuf_CubeTexUpload(int width, int height, unsigned pixel_size, TextureCube* tex, const void* hdata)
+				: m_staging_buf(6*width*height*pixel_size)
+			{
+				m_staging_buf.upload(hdata);
+				tex->apply_barrier(*this, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+				VkBufferImageCopy region = {};
+				region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				region.imageSubresource.layerCount = 6;
+				region.imageExtent = {
+					(uint32_t)width,
+					(uint32_t)height,
+					1
+				};
+
+				vkCmdCopyBufferToImage(
+					m_buf,
+					m_staging_buf.buf(),
+					tex->image(),
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+					1,
+					&region
+				);
+			}
+
+		private:
+			UploadBuffer m_staging_buf;
+		};
+
+		void TextureCube::upload(const void* hdata)
+		{
+			auto cmdBuf = new CommandBuf_CubeTexUpload(m_width, m_height, pixel_size(), this, hdata);
+			const Context* ctx = Context::get_context();
+			ctx->SubmitCommandBuffer(cmdBuf);
+		}
+
+		void TextureCube::download(void* hdata) const
+		{
+			if (m_width == 0 || m_height == 0) return;
+			DownloadBuffer staging_buf(6*m_width*m_height*pixel_size());
+
+			auto cmdBuf = new AutoCommandBuffer;
+
+			apply_barrier(*cmdBuf, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+			VkBufferImageCopy region = {};
+			region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			region.imageSubresource.layerCount = 6;
+			region.imageExtent = {
+				(uint32_t)m_width,
+				(uint32_t)m_height,
+				1
+			};
+
+			vkCmdCopyImageToBuffer(
+				cmdBuf->buf(),
+				m_image,
+				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				staging_buf.buf(),
+				1,
+				&region
+			);
+
+			const Context* ctx = Context::get_context();
+			ctx->SubmitCommandBuffer(cmdBuf);
+			ctx->Wait();
+			staging_buf.download(hdata);
+		}
+
 		Sampler::Sampler()
 		{
 			const Context* ctx = Context::get_context();
@@ -1017,7 +1207,7 @@ namespace VkInline
 			vkDestroySampler(ctx->device(), m_sampler, nullptr);
 		}
 
-		ComputePipeline::ComputePipeline(const std::vector<unsigned>& spv, size_t num_tex2d, size_t num_tex3d)
+		ComputePipeline::ComputePipeline(const std::vector<unsigned>& spv, size_t num_tex2d, size_t num_tex3d, size_t num_cubemap)
 		{
 			m_sampler = nullptr;
 			const Context* ctx = Context::get_context();
@@ -1059,7 +1249,18 @@ namespace VkInline
 					descriptorSetLayoutBindings.push_back(binding_tex3d);
 				}
 
-				if (num_tex2d > 0 || num_tex3d > 0)
+				m_num_cubemap = num_cubemap;
+				if (num_cubemap > 0)
+				{
+					VkDescriptorSetLayoutBinding binding_cubemap = {};
+					binding_cubemap.binding = 3;
+					binding_cubemap.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+					binding_cubemap.descriptorCount = (unsigned)num_cubemap;
+					binding_cubemap.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+					descriptorSetLayoutBindings.push_back(binding_cubemap);
+				}
+
+				if (num_tex2d > 0 || num_tex3d > 0 || num_cubemap > 0)
 				{
 					m_sampler = new Sampler;
 				}
@@ -1201,7 +1402,7 @@ namespace VkInline
 			m_pipeline->recycler()->RecycleCommandBuffer(this);
 		}
 
-		void ComputeCommandBuffer::dispatch(void* param_data, Texture2D** tex2ds, Texture3D** tex3ds, unsigned dim_x, unsigned dim_y, unsigned dim_z)
+		void ComputeCommandBuffer::dispatch(void* param_data, Texture2D** tex2ds, Texture3D** tex3ds, TextureCube** cubemaps, unsigned dim_x, unsigned dim_y, unsigned dim_z)
 		{
 			const Context* ctx = Context::get_context();
 			if (m_ubo != nullptr)
@@ -1226,6 +1427,16 @@ namespace VkInline
 				tex3dInfos[i].sampler = m_pipeline->sampler()->sampler();
 				tex3ds[i]->apply_barrier(*this, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 			}			
+			
+			std::vector<VkDescriptorImageInfo> cubemapInfos(m_pipeline->num_cubemap());
+			for (size_t i = 0; i < m_pipeline->num_cubemap(); ++i)
+			{
+				cubemapInfos[i] = {};
+				cubemapInfos[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+				cubemapInfos[i].imageView = cubemaps[i]->view();
+				cubemapInfos[i].sampler = m_pipeline->sampler()->sampler();
+				cubemaps[i]->apply_barrier(*this, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+			}
 
 			std::vector<VkWriteDescriptorSet> list_wds;
 			if (m_pipeline->num_tex2d() > 0)
@@ -1251,6 +1462,18 @@ namespace VkInline
 				list_wds.push_back(wds);
 			}
 
+			if (m_pipeline->num_cubemap() > 0)
+			{
+				VkWriteDescriptorSet wds = {};
+				wds.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				wds.dstSet = m_descriptorSet;
+				wds.dstBinding = 3;
+				wds.descriptorCount = (uint32_t)m_pipeline->num_cubemap();
+				wds.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				wds.pImageInfo = cubemapInfos.data();
+				list_wds.push_back(wds);
+			}
+
 			vkUpdateDescriptorSets(ctx->device(), (unsigned)list_wds.size(), list_wds.data(), 0, nullptr);
 
 			if (m_ubo != nullptr)
@@ -1266,7 +1489,7 @@ namespace VkInline
 			const AttachmentInfo* depth_attachmentInfo,
 			const std::vector<AttachmentInfo>& resolve_attachmentInfo,
 			const std::vector<GraphicsPipelineInfo>& pipelineInfo,
-			size_t num_tex2d, size_t num_tex3d)
+			size_t num_tex2d, size_t num_tex3d, size_t num_cubemap)
 		{
 			m_num_color_attachments = color_attachmentInfo.size();
 			m_has_depth_attachment = depth_attachmentInfo != nullptr;
@@ -1307,7 +1530,18 @@ namespace VkInline
 					descriptorSetLayoutBindings.push_back(binding_tex3d);
 				}
 
-				if (num_tex2d >0 || num_tex3d > 0)
+				m_num_cubemap = num_cubemap;
+				if (m_num_cubemap > 0)
+				{
+					VkDescriptorSetLayoutBinding binding_cubemap = {};
+					binding_cubemap.binding = 3;
+					binding_cubemap.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+					binding_cubemap.descriptorCount = (unsigned)m_num_cubemap;
+					binding_cubemap.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+					descriptorSetLayoutBindings.push_back(binding_cubemap);
+				}
+
+				if (num_tex2d >0 || num_tex3d > 0 || num_cubemap>0)
 				{
 					m_sampler = new Sampler;
 				}
@@ -1628,7 +1862,7 @@ namespace VkInline
 		}
 
 		void RenderPassCommandBuffer::draw(Texture2D** colorBufs, Texture2D* depthBuf, Texture2D** resolveBufs, float* clear_colors, float clear_depth,
-			void* param_data, Texture2D** tex2ds, Texture3D** tex3ds, DrawParam* draw_params)
+			void* param_data, Texture2D** tex2ds, Texture3D** tex3ds, TextureCube** cubemaps, DrawParam* draw_params)
 		{
 
 			const Context* ctx = Context::get_context();
@@ -1655,6 +1889,16 @@ namespace VkInline
 				tex3ds[i]->apply_barrier(*this, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
 			}
 
+			std::vector<VkDescriptorImageInfo> cubemapsInfos(m_render_pass->num_cubemap());
+			for (size_t i = 0; i < m_render_pass->num_cubemap(); ++i)
+			{
+				cubemapsInfos[i] = {};
+				cubemapsInfos[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+				cubemapsInfos[i].imageView = cubemaps[i]->view();
+				cubemapsInfos[i].sampler = m_render_pass->sampler()->sampler();
+				cubemaps[i]->apply_barrier(*this, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+			}
+
 			std::vector<VkWriteDescriptorSet> list_wds;
 			if (m_render_pass->num_tex2d() > 0)
 			{
@@ -1676,6 +1920,17 @@ namespace VkInline
 				wds.descriptorCount = (uint32_t)m_render_pass->num_tex3d();
 				wds.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 				wds.pImageInfo = tex3dInfos.data();
+				list_wds.push_back(wds);
+			}
+			if (m_render_pass->num_cubemap() > 0)
+			{
+				VkWriteDescriptorSet wds = {};
+				wds.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				wds.dstSet = m_descriptorSet;
+				wds.dstBinding = 3;
+				wds.descriptorCount = (uint32_t)m_render_pass->num_cubemap();
+				wds.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				wds.pImageInfo = cubemapsInfos.data();
 				list_wds.push_back(wds);
 			}
 

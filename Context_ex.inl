@@ -132,7 +132,8 @@ namespace VkInline
 		m_kid = (unsigned)(-1);
 	}
 
-	bool RayTracer::launch(dim_type glbDim, const ShaderViewable** args, const std::vector<TopLevelAS*>& arr_tlas, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, size_t times_submission)
+	bool RayTracer::launch(dim_type glbDim, const ShaderViewable** args, 
+		const std::vector<TopLevelAS*>& arr_tlas, const std::vector<Texture2D*>& tex2ds, const std::vector<Texture3D*>& tex3ds, const std::vector<Cubemap*>& cubemaps, size_t times_submission)
 	{
 		Context& ctx = Context::get_context();
 		if (!m_type_locked)
@@ -148,8 +149,8 @@ namespace VkInline
 			for (size_t i = 0; i < m_body_miss.size(); i++)
 				p_body_miss[i] = m_body_miss[i].c_str();
 
-			return ctx.launch_raytrace(glbDim, arg_map, m_maxRecursionDepth, arr_tlas, tex2ds, tex3ds, 
-				m_body_raygen.c_str(), p_body_miss, m_body_hit, times_submission);
+			return ctx.launch_raytrace(glbDim, arg_map, m_maxRecursionDepth, 
+				arr_tlas, tex2ds, tex3ds, cubemaps,	m_body_raygen.c_str(), p_body_miss, m_body_hit, times_submission);
 		}
 		else
 		{
@@ -167,13 +168,14 @@ namespace VkInline
 					p_body_miss[i] = m_body_miss[i].c_str();
 
 				m_offsets.resize(m_param_names.size() + 1);
-				return ctx.launch_raytrace(glbDim, arg_map, m_maxRecursionDepth, arr_tlas, tex2ds, tex3ds,
-					m_body_raygen.c_str(), p_body_miss, m_body_hit, m_kid, m_offsets.data(), times_submission);
+				return ctx.launch_raytrace(glbDim, arg_map, m_maxRecursionDepth, 
+					arr_tlas, tex2ds, tex3ds, cubemaps,	m_body_raygen.c_str(), p_body_miss, m_body_hit, m_kid, m_offsets.data(), times_submission);
 			}
 			else
 			{
 				locker.unlock();
-				return ctx.launch_raytrace(glbDim, m_param_names.size(), args, arr_tlas.data(), tex2ds.data(), tex3ds.data(), m_kid, m_offsets.data(), times_submission);
+				return ctx.launch_raytrace(glbDim, m_param_names.size(), args, 
+					arr_tlas.data(), tex2ds.data(), tex3ds.data(), cubemaps.data(), m_kid, m_offsets.data(), times_submission);
 			}
 		}
 	}

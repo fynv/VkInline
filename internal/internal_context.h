@@ -239,6 +239,38 @@ namespace VkInline
 			mutable VkAccessFlags m_cur_access_mask;
 		};
 
+		class TextureCube
+		{
+		public:
+			int width() const { return m_width; }
+			int height() const { return m_height; }
+			unsigned pixel_size() const;
+			unsigned channel_count() const;
+			const VkFormat& format() const { return m_format; }
+			const VkImage& image() const { return m_image; }
+			const VkDeviceMemory& memory() const { return m_mem; }
+			const VkImageView& view() const { return m_view; }
+
+			TextureCube(int width, int height, VkFormat format);
+			~TextureCube();
+
+			void apply_barrier(const CommandBuffer& cmdbuf, VkImageLayout newLayout, VkAccessFlags dstAccessMask, VkPipelineStageFlags dstStageMask) const;
+
+			void upload(const void* hdata);
+			void download(void* hdata) const;
+
+		private:
+			int m_width;
+			int m_height;
+			VkFormat m_format;
+			VkImage m_image;
+			VkDeviceMemory m_mem;
+			VkImageView m_view;
+
+			mutable VkImageLayout m_cur_layout;
+			mutable VkAccessFlags m_cur_access_mask;
+		};
+
 		class Sampler
 		{
 		public:
@@ -255,7 +287,7 @@ namespace VkInline
 		class ComputePipeline
 		{
 		public:
-			ComputePipeline(const std::vector<unsigned>& spv, size_t num_tex2d, size_t num_tex3d);
+			ComputePipeline(const std::vector<unsigned>& spv, size_t num_tex2d, size_t num_tex3d, size_t num_cubemap);
 			~ComputePipeline();
 
 			const VkDescriptorSetLayout& layout_desc() const { return m_descriptorSetLayout; }
@@ -263,6 +295,7 @@ namespace VkInline
 			const VkPipeline& pipeline() const { return m_pipeline; }
 			size_t num_tex2d() const { return m_num_tex2d; }
 			size_t num_tex3d() const { return m_num_tex3d; }
+			size_t num_cubemap() const { return m_num_cubemap; }
 			Sampler* sampler() const { return m_sampler; }
 			CommandBufferRecycler* recycler() const;
 
@@ -273,6 +306,7 @@ namespace VkInline
 
 			size_t m_num_tex2d;
 			size_t m_num_tex3d;
+			size_t m_num_cubemap;
 			Sampler* m_sampler;
 
 			mutable std::unordered_map<std::thread::id, CommandBufferRecycler*> m_recyclers;
@@ -287,7 +321,7 @@ namespace VkInline
 			~ComputeCommandBuffer();
 
 			virtual void Recycle();
-			void dispatch(void* param_data, Texture2D** tex2ds, Texture3D** tex3ds, unsigned dim_x, unsigned dim_y, unsigned dim_z);
+			void dispatch(void* param_data, Texture2D** tex2ds, Texture3D** tex3ds, TextureCube** cubemaps, unsigned dim_x, unsigned dim_y, unsigned dim_z);
 
 		private:
 			const ComputePipeline* m_pipeline;
@@ -328,7 +362,7 @@ namespace VkInline
 				const AttachmentInfo* depth_attachmentInfo,
 				const std::vector<AttachmentInfo>& resolve_attachmentInfo,
 				const std::vector<GraphicsPipelineInfo>& pipelineInfo,
-				size_t num_tex2d, size_t num_tex3d);
+				size_t num_tex2d, size_t num_tex3d, size_t num_cubemap);
 
 			~RenderPass();		
 
@@ -343,6 +377,7 @@ namespace VkInline
 			const VkPipeline& pipeline(int i) const { return m_pipelines[i]; }
 			size_t num_tex2d() const { return m_num_tex2d; }
 			size_t num_tex3d() const { return m_num_tex3d; }
+			size_t num_cubemap() const { return m_num_cubemap; }
 			Sampler* sampler() const { return m_sampler; }
 			CommandBufferRecycler* recycler() const;
 
@@ -359,6 +394,7 @@ namespace VkInline
 			
 			size_t m_num_tex2d;
 			size_t m_num_tex3d;
+			size_t m_num_cubemap;
 			Sampler* m_sampler;		
 
 			mutable std::unordered_map<std::thread::id, CommandBufferRecycler*> m_recyclers;
@@ -380,7 +416,7 @@ namespace VkInline
 
 			virtual void Recycle();
 			void draw(Texture2D** colorBufs, Texture2D* depthBuf, Texture2D** resolveBufs, float* clear_colors, float clear_depth,
-				void* param_data, Texture2D** tex2ds, Texture3D** tex3ds, DrawParam* draw_params);
+				void* param_data, Texture2D** tex2ds, Texture3D** tex3ds, TextureCube** cubemaps, DrawParam* draw_params);
 			
 		private:
 			const RenderPass* m_render_pass;

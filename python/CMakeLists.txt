@@ -17,6 +17,7 @@ api_SVCombine.cpp
 api_SVObjBuffer.cpp
 api_Texture2D.cpp
 api_Texture3D.cpp
+api_Cubemap.cpp
 api_ex.h
 api_Context_ex.inl
 )
@@ -73,6 +74,7 @@ set(PYTHON
 	VkInline/SVObjVector.py
 	VkInline/Texture2D.py
 	VkInline/Texture3D.py
+	VkInline/Cubemap.py
 )
 
 install(FILES ${PYTHON} DESTINATION test_python/VkInline)
