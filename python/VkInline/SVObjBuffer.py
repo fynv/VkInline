@@ -1,5 +1,6 @@
 from .Native import ffi, native
 from .ShaderViewable import ShaderViewable
+from .utils import *
 
 class SVObjBuffer(ShaderViewable):
     def __init__(self, lst_svobjs):
