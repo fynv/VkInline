@@ -25,8 +25,9 @@ namespace VkInline
 
 		unsigned alignment = 4;
 		if (m_elem_size % 8 == 0) alignment = 8;
-		if (m_elem_size % 16 == 0) alignment = 16; char line[1024];
-
+		if (m_elem_size % 16 == 0) alignment = 16; 
+		
+		char line[1024];
 		sprintf(line, "layout(buffer_reference, scalar, buffer_reference_align = %u) buffer Buf_#hash#\n", alignment);
 		std::string code = std::string(line) +
 			"{\n    " + m_elem_type +
@@ -34,6 +35,7 @@ namespace VkInline
 			"};\n";
 
 		m_name_view_type = std::string("Buf_") + Add_Dynamic_Code(code.c_str());
+
 		m_data = new Internal::UploadBuffer(m_elem_size*m_size, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
 
 		update();
