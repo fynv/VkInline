@@ -320,6 +320,7 @@ $ pip3 install VkInline
 ## Runtime Dependencies
 
 A Vulkan-capable GPU and a recent driver is needed at run-time.
+For ray-tracing, a [Nvidia Beta driver](https://developer.nvidia.com/vulkan-driver) might be needed.
 
 You may also need Vulkan SDK at runtime for some platforms.
 
