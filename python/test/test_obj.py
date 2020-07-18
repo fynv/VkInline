@@ -22,8 +22,8 @@ for shape in shapes:
 		lst_vertex_inds += [ind.vertex_index]
 		lst_normal_inds += [ind.normal_index]
 
-vertex_inds = np.array(lst_vertex_inds, dtype=np.int32)
-normal_inds = np.array(lst_normal_inds, dtype=np.int32)
+vertex_inds = np.array(lst_vertex_inds, dtype=np.uint32)
+normal_inds = np.array(lst_normal_inds, dtype=np.uint32)
 
 VK_FORMAT_R8G8B8A8_SRGB = 43
 VK_FORMAT_D32_SFLOAT = 126
