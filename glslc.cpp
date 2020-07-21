@@ -149,15 +149,14 @@ bool GLSL2SPV(const char* InputCString, const std::unordered_map<std::string, st
 	glslang::TShader Shader(ShaderType);
 	Shader.setStrings(&InputCString, 1);
 
+	const int ClientInputSemanticsVersion = 100;
 #ifndef _VkInlineEX
-	int ClientInputSemanticsVersion = 110;
 	glslang::EShTargetClientVersion VulkanClientVersion = glslang::EShTargetVulkan_1_1;
-#else
-	int ClientInputSemanticsVersion = 120;
-	glslang::EShTargetClientVersion VulkanClientVersion = glslang::EShTargetVulkan_1_2;
-#endif
-
 	glslang::EShTargetLanguageVersion TargetVersion = glslang::EShTargetSpv_1_0;
+#else	
+	glslang::EShTargetClientVersion VulkanClientVersion = glslang::EShTargetVulkan_1_2;
+	glslang::EShTargetLanguageVersion TargetVersion = glslang::EShTargetSpv_1_4;
+#endif
 
 	Shader.setEnvInput(glslang::EShSourceGlsl, ShaderType, glslang::EShClientVulkan, ClientInputSemanticsVersion);
 	Shader.setEnvClient(glslang::EShClientVulkan, VulkanClientVersion);
@@ -169,19 +168,9 @@ bool GLSL2SPV(const char* InputCString, const std::unordered_map<std::string, st
 
 	const int DefaultVersion = 110;
 
-	std::string PreprocessedGLSL;
-
 	BuiltInIncluder Includer(headers);
-	if (!Shader.preprocess(&Resources, DefaultVersion, ENoProfile, false, false, messages, &PreprocessedGLSL, Includer))
-	{
-		puts("GLSL Preprocessing Failed for: ");
-		puts(Shader.getInfoLog());
-		puts(Shader.getInfoDebugLog());
-	}
-	
-	const char* PreprocessedCStr = PreprocessedGLSL.c_str();
-	Shader.setStrings(&PreprocessedCStr, 1);
-	if (!Shader.parse(&Resources, DefaultVersion, false, messages))
+
+	if (!Shader.parse(&Resources, DefaultVersion, false, messages, Includer))
 	{
 		puts("GLSL Parsing Failed for: ");
 		puts(Shader.getInfoLog());
