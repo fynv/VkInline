@@ -96,7 +96,8 @@ namespace VkInline
 			"#extension GL_EXT_shader_explicit_arithmetic_types_int64 : enable\n"
 			"#extension GL_EXT_buffer_reference2 : enable\n"
 			"#extension GL_EXT_nonuniform_qualifier : enable\n"
-			"#extension GL_EXT_scalar_block_layout : enable\n";
+			"#extension GL_EXT_scalar_block_layout : enable\n"
+			"#extension GL_EXT_shader_atomic_float : enable\n";
 
 		saxpy += "layout(binding = 1) uniform sampler2D arr_tex2d[];\n";
 		saxpy += "layout(binding = 2) uniform sampler3D arr_tex3d[];\n";
@@ -201,7 +202,8 @@ namespace VkInline
 			"#extension GL_EXT_shader_explicit_arithmetic_types_int64 : enable\n"
 			"#extension GL_EXT_buffer_reference2 : enable\n"
 			"#extension GL_EXT_nonuniform_qualifier : enable\n"
-			"#extension GL_EXT_scalar_block_layout : enable\n";
+			"#extension GL_EXT_scalar_block_layout : enable\n"
+			"#extension GL_EXT_shader_atomic_float : enable\n";
 
 		saxpy += "layout(binding = 1) uniform sampler2D arr_tex2d[];\n";
 		saxpy += "layout(binding = 2) uniform sampler3D arr_tex3d[];\n";
@@ -384,7 +386,8 @@ namespace VkInline
 			"#extension GL_EXT_shader_explicit_arithmetic_types_int64 : enable\n"
 			"#extension GL_EXT_buffer_reference2 : enable\n"
 			"#extension GL_EXT_nonuniform_qualifier : enable\n"
-			"#extension GL_EXT_scalar_block_layout : enable\n";		
+			"#extension GL_EXT_scalar_block_layout : enable\n"
+			"#extension GL_EXT_shader_atomic_float : enable\n";
 
 		saxpy += "layout(binding = 1) uniform sampler2D arr_tex2d[];\n";
 		saxpy += "layout(binding = 2) uniform sampler3D arr_tex3d[];\n";
@@ -644,7 +647,8 @@ namespace VkInline
 			"#extension GL_EXT_shader_explicit_arithmetic_types_int64 : enable\n"
 			"#extension GL_EXT_buffer_reference2 : enable\n"
 			"#extension GL_EXT_nonuniform_qualifier : enable\n"
-			"#extension GL_EXT_scalar_block_layout : enable\n";
+			"#extension GL_EXT_scalar_block_layout : enable\n"
+			"#extension GL_EXT_shader_atomic_float : enable\n";
 
 		saxpy += "layout(binding = 1) uniform sampler2D arr_tex2d[];\n";
 		saxpy += "layout(binding = 2) uniform sampler3D arr_tex3d[];\n";
