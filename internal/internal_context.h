@@ -84,10 +84,13 @@ namespace VkInline
 
 			virtual void Recycle();
 
+			friend class Context;
+
 		protected:
 			Context::Stream* m_stream;
 			VkCommandBuffer m_buf;
 			VkFence m_fence;
+			bool m_submitted;
 
 		};
 

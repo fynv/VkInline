@@ -288,6 +288,7 @@ namespace VkInline
 			beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 			vkBeginCommandBuffer(m_buf, &beginInfo);
 
+			m_submitted = false;
 		}
 
 		CommandBuffer::~CommandBuffer()
@@ -327,10 +328,12 @@ namespace VkInline
 				}
 			}
 			s->m_queue_wait.push(cmdBuf);
+			cmdBuf->m_submitted = true;
 		}
 
 		void Context::WaitUtil(CommandBuffer* lastCmdBuf) const
 		{
+			if (lastCmdBuf != nullptr && !lastCmdBuf->m_submitted) return;
 			Context::Stream* s = stream();
 			while (s->m_queue_wait.size() > 0)
 			{
@@ -339,6 +342,7 @@ namespace VkInline
 				vkWaitForFences(m_device, 1, &cb->fence(), VK_TRUE, UINT64_MAX);
 				vkResetFences(m_device, 1, &cb->fence());
 				vkResetCommandBuffer(cb->buf(), 0);
+				cb->m_submitted = false;
 				cb->Recycle();
 				if (cb == lastCmdBuf) return;
 			}
