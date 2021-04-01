@@ -233,7 +233,7 @@ namespace VkInline
 #ifdef _DEBUG
 			vkDestroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);
 #endif
-			vkDestroyDevice(m_device, nullptr);
+			//vkDestroyDevice(m_device, nullptr);
 			// vkDestroyInstance(m_instance, nullptr); // cause halt for beta driver
 		}
 
