@@ -200,11 +200,14 @@ namespace VkInline
 				{
 #ifndef _VkInlineEX
 					printf("Failed to create vulkan device\n");
-#else
-					printf("Failed to create vulkan device. (VK_KHR_ray_tracing not supported, switching to Vulkan 1.1.)\n");
 #endif
 					return false;
 				}
+#ifndef _VkInlineEX
+				printf("Using Vulkan 1.1 (no VK_KHR_ray_tracing)\n");
+#else
+				printf("Using Vulkan 1.2 (with VK_KHR_ray_tracing)\n");
+#endif
 			}
 
 			vkGetDeviceQueue(m_device, m_queueFamily, 0, &m_queue);
