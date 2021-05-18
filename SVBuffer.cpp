@@ -24,7 +24,7 @@ namespace VkInline
 		m_name_view_type = std::string("Buf_") + Add_Dynamic_Code(code.c_str());
 		VkBufferUsageFlags usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
 #ifdef _VkInlineEX
-		usage |= VK_BUFFER_USAGE_RAY_TRACING_BIT_KHR;
+		usage |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
 #endif
 		m_data = new Internal::DeviceBuffer(m_elem_size*m_size, usage);
 		if (hdata != nullptr)

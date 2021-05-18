@@ -20,7 +20,11 @@ namespace VkInline
 		class BaseLevelAS : public AS
 		{
 		public:
-			BaseLevelAS(uint32_t geometryCount, const VkAccelerationStructureCreateGeometryTypeInfoKHR* geoTypeInfo, const VkAccelerationStructureGeometryKHR* pGeometries, const VkAccelerationStructureBuildOffsetInfoKHR* offsets);
+			BaseLevelAS(
+				const VkAccelerationStructureBuildGeometryInfoKHR& geoBuildInfo,
+				const VkAccelerationStructureGeometryKHR* pGeometries,
+				const VkAccelerationStructureBuildRangeInfoKHR** ranges);
+
 			virtual ~BaseLevelAS();
 
 		private:
@@ -60,10 +64,10 @@ namespace VkInline
 			const VkDescriptorSetLayout& layout_desc() const { return m_descriptorSetLayout; }
 			const VkPipelineLayout& layout_pipeline() const { return m_pipelineLayout; }
 			const VkPipeline& pipeline() const { return m_pipeline; }
-			const VkStridedBufferRegionKHR& sbt_entry_raygen() const { return m_sbt_entry_raygen; }
-			const VkStridedBufferRegionKHR& sbt_entry_miss() const { return m_sbt_entry_miss; }
-			const VkStridedBufferRegionKHR& sbt_entry_hit() const { return m_sbt_entry_hit; }
-			const VkStridedBufferRegionKHR& sbt_entry_callable() const { return m_sbt_entry_callable; }			
+			const VkStridedDeviceAddressRegionKHR& sbt_entry_raygen() const { return m_sbt_entry_raygen; }
+			const VkStridedDeviceAddressRegionKHR& sbt_entry_miss() const { return m_sbt_entry_miss; }
+			const VkStridedDeviceAddressRegionKHR& sbt_entry_hit() const { return m_sbt_entry_hit; }
+			const VkStridedDeviceAddressRegionKHR& sbt_entry_callable() const { return m_sbt_entry_callable; }
 
 			size_t num_tlas() const { return m_num_tlas; }
 			size_t num_tex2d() const { return m_num_tex2d; }
@@ -78,10 +82,10 @@ namespace VkInline
 			VkPipelineLayout m_pipelineLayout;
 			VkPipeline m_pipeline;
 			DeviceBuffer* m_shaderBindingTableBuffer;
-			VkStridedBufferRegionKHR m_sbt_entry_raygen;
-			VkStridedBufferRegionKHR m_sbt_entry_miss;
-			VkStridedBufferRegionKHR m_sbt_entry_hit;
-			VkStridedBufferRegionKHR m_sbt_entry_callable;
+			VkStridedDeviceAddressRegionKHR m_sbt_entry_raygen;
+			VkStridedDeviceAddressRegionKHR m_sbt_entry_miss;
+			VkStridedDeviceAddressRegionKHR m_sbt_entry_hit;
+			VkStridedDeviceAddressRegionKHR m_sbt_entry_callable;
 
 			size_t m_num_tlas;
 			size_t m_num_tex2d;

@@ -24,7 +24,7 @@ namespace VkInline
 			const VkDevice& device() const { return m_device; }
 
 #ifdef _VkInlineEX
-			const VkPhysicalDeviceRayTracingPropertiesKHR& raytracing_properties()  const { return m_raytracingProperties; }
+			const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracing_properties()  const { return m_rayTracingPipelineProperties; }
 #endif
 
 			struct Stream
@@ -40,20 +40,21 @@ namespace VkInline
 			void Wait() const;
 
 		private:
-			VkDebugUtilsMessengerEXT m_debugMessenger;
-			VkInstance m_instance;
-			VkPhysicalDevice m_physicalDevice;
+			VkDebugUtilsMessengerEXT m_debugMessenger = VK_NULL_HANDLE;
+			VkInstance m_instance = VK_NULL_HANDLE;
+			VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
 
 #ifndef _VkInlineEX
-			VkPhysicalDeviceBufferDeviceAddressFeaturesEXT m_bufferDeviceAddressFeatures;
+			VkPhysicalDeviceBufferDeviceAddressFeaturesEXT m_bufferDeviceAddressFeatures{};
 #else
-			VkPhysicalDeviceBufferDeviceAddressFeatures m_bufferDeviceAddressFeatures;
-			VkPhysicalDeviceRayTracingFeaturesKHR m_raytracingFeatures;
-			VkPhysicalDeviceRayTracingPropertiesKHR m_raytracingProperties;
+			VkPhysicalDeviceBufferDeviceAddressFeatures m_bufferDeviceAddressFeatures{};
+			VkPhysicalDeviceRayTracingPipelineFeaturesKHR m_rayTracingPipelineFeatures{};
+			VkPhysicalDeviceAccelerationStructureFeaturesKHR m_accelerationStructureFeatures{};
+			VkPhysicalDeviceRayTracingPipelinePropertiesKHR  m_rayTracingPipelineProperties{};
 #endif
-			VkPhysicalDeviceDescriptorIndexingFeatures m_descriptorIndexingFeatures;
-			VkPhysicalDeviceScalarBlockLayoutFeatures m_scalarBlockLayoutFeatures;
-			VkPhysicalDeviceFeatures2 m_features2;
+			VkPhysicalDeviceDescriptorIndexingFeatures m_descriptorIndexingFeatures{};
+			VkPhysicalDeviceScalarBlockLayoutFeatures m_scalarBlockLayoutFeatures{};
+			VkPhysicalDeviceFeatures2 m_features2{};
 			uint32_t m_queueFamily;
 			float m_queuePriority;
 			VkDevice m_device;

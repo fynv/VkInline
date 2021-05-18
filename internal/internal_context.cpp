@@ -116,26 +116,22 @@ namespace VkInline
 
 			
 			{
-				m_bufferDeviceAddressFeatures = {};
 #ifndef _VkInlineEX
 				m_bufferDeviceAddressFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_EXT;
 #else
 				m_bufferDeviceAddressFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
 #endif
 				m_bufferDeviceAddressFeatures.pNext = &m_descriptorIndexingFeatures;
-				m_descriptorIndexingFeatures = {};
 				m_descriptorIndexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
 				m_descriptorIndexingFeatures.pNext = &m_scalarBlockLayoutFeatures;
-				m_scalarBlockLayoutFeatures = {};
 				m_scalarBlockLayoutFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT;
 
 #ifdef _VkInlineEX
-				m_scalarBlockLayoutFeatures.pNext = &m_raytracingFeatures;
-				m_raytracingFeatures = {};
-				m_raytracingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_FEATURES_KHR;
+				m_scalarBlockLayoutFeatures.pNext = &m_rayTracingPipelineFeatures;
+				m_rayTracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+				m_rayTracingPipelineFeatures.pNext = &m_accelerationStructureFeatures;
+				m_accelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;			
 #endif
-
-				m_features2 = {};
 				m_features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 				m_features2.pNext = &m_bufferDeviceAddressFeatures;
 				vkGetPhysicalDeviceFeatures2(m_physicalDevice, &m_features2);
@@ -144,12 +140,11 @@ namespace VkInline
 
 #ifdef _VkInlineEX
 			{
-				m_raytracingProperties = {};
-				m_raytracingProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PROPERTIES_KHR;
+				m_rayTracingPipelineProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
 				VkPhysicalDeviceProperties2 props = {};
 				props.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-				props.pNext = &m_raytracingProperties;
-				vkGetPhysicalDeviceProperties2(m_physicalDevice, &props);
+				props.pNext = &m_rayTracingPipelineProperties;
+				vkGetPhysicalDeviceProperties2(m_physicalDevice, &props);				
 			}
 #endif
 
@@ -180,7 +175,8 @@ namespace VkInline
 #else
 					VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME,
 					VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
-					VK_KHR_RAY_TRACING_EXTENSION_NAME,
+					VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+					VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
 					VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
 					VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME,
 #endif

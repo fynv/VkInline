@@ -2,47 +2,44 @@ namespace VkInline
 {
 	BaseLevelAS::BaseLevelAS(SVBuffer* indBuf, SVBuffer* posBuf)
 	{
-		VkAccelerationStructureCreateGeometryTypeInfoKHR acceleration_create_geometry_info = {};
-		acceleration_create_geometry_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_GEOMETRY_TYPE_INFO_KHR;
-		acceleration_create_geometry_info.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
-		acceleration_create_geometry_info.maxPrimitiveCount = (unsigned)(indBuf == nullptr ? posBuf->size() / 3: indBuf->size()/3);
-		acceleration_create_geometry_info.indexType = VK_INDEX_TYPE_NONE_KHR;
-		if (indBuf != nullptr)
-			acceleration_create_geometry_info.indexType = indBuf->elem_size() > 2? VK_INDEX_TYPE_UINT32: VK_INDEX_TYPE_UINT16;
-		acceleration_create_geometry_info.maxVertexCount = (unsigned)posBuf->size();
-
-		if (posBuf->name_elem_type() == "vec2")
-			acceleration_create_geometry_info.vertexFormat = VK_FORMAT_R32G32_SFLOAT;
-		else if(posBuf->name_elem_type() == "vec3")
-			acceleration_create_geometry_info.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
-
 		VkAccelerationStructureGeometryKHR acceleration_geometry = {};
 		acceleration_geometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
 		acceleration_geometry.flags = VK_GEOMETRY_OPAQUE_BIT_KHR;
 		acceleration_geometry.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
 		acceleration_geometry.geometry.triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
-		acceleration_geometry.geometry.triangles.vertexFormat = acceleration_create_geometry_info.vertexFormat;
-		acceleration_geometry.geometry.triangles.vertexData.deviceAddress = posBuf->internal()->get_device_address();
-		acceleration_geometry.geometry.triangles.vertexStride = posBuf->elem_size();
-		acceleration_geometry.geometry.triangles.indexType = acceleration_create_geometry_info.indexType;
-		acceleration_geometry.geometry.triangles.indexData.deviceAddress = indBuf==nullptr? 0: indBuf->internal()->get_device_address();
+		acceleration_geometry.geometry.triangles.vertexData.deviceAddress = posBuf->internal()->get_device_address();		
+		acceleration_geometry.geometry.triangles.maxVertex = (unsigned)posBuf->size();
+		acceleration_geometry.geometry.triangles.vertexStride = posBuf->elem_size();		
+		acceleration_geometry.geometry.triangles.indexData.deviceAddress = indBuf == nullptr ? 0 : indBuf->internal()->get_device_address();
 
-		VkAccelerationStructureBuildOffsetInfoKHR acceleration_build_offset_info = {};
-		acceleration_build_offset_info.primitiveCount = (unsigned)(indBuf == nullptr ? posBuf->size() / 3 : indBuf->size() / 3);
-		acceleration_build_offset_info.primitiveOffset = 0x0;
-		acceleration_build_offset_info.firstVertex = 0;
-		acceleration_build_offset_info.transformOffset = 0x0;
+		if (posBuf->name_elem_type() == "vec2")
+			acceleration_geometry.geometry.triangles.vertexFormat = VK_FORMAT_R32G32_SFLOAT;
+		else if (posBuf->name_elem_type() == "vec3")
+			acceleration_geometry.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
 
-		m_blas = new Internal::BaseLevelAS(1, &acceleration_create_geometry_info, &acceleration_geometry, &acceleration_build_offset_info);
+		acceleration_geometry.geometry.triangles.indexType = VK_INDEX_TYPE_NONE_KHR;
+		if (indBuf != nullptr)
+			acceleration_geometry.geometry.triangles.indexType = indBuf->elem_size() > 2 ? VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16;
+
+		VkAccelerationStructureBuildGeometryInfoKHR geoBuildInfo{};
+		geoBuildInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+		geoBuildInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
+		geoBuildInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+		geoBuildInfo.geometryCount = 1;
+		geoBuildInfo.pGeometries = &acceleration_geometry;
+		
+		VkAccelerationStructureBuildRangeInfoKHR range{};
+		range.primitiveCount = (unsigned)(indBuf == nullptr ? posBuf->size() / 3 : indBuf->size() / 3);
+		range.primitiveOffset = 0;
+		range.firstVertex = 0;
+		range.transformOffset = 0;
+		const VkAccelerationStructureBuildRangeInfoKHR* ranges = &range;		
+
+		m_blas = new Internal::BaseLevelAS(geoBuildInfo, &acceleration_geometry, &ranges);
 	}
 
 	BaseLevelAS::BaseLevelAS(SVBuffer* aabbBuf)
 	{
-		VkAccelerationStructureCreateGeometryTypeInfoKHR acceleration_create_geometry_info = {};
-		acceleration_create_geometry_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_GEOMETRY_TYPE_INFO_KHR;
-		acceleration_create_geometry_info.geometryType = VK_GEOMETRY_TYPE_AABBS_KHR;
-		acceleration_create_geometry_info.maxPrimitiveCount = 1;
-
 		VkAccelerationStructureGeometryKHR acceleration_geometry = {};
 		acceleration_geometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
 		acceleration_geometry.flags = VK_GEOMETRY_OPAQUE_BIT_KHR;
@@ -51,13 +48,21 @@ namespace VkInline
 		acceleration_geometry.geometry.aabbs.data.deviceAddress = aabbBuf->internal()->get_device_address();
 		acceleration_geometry.geometry.aabbs.stride = 0;
 
-		VkAccelerationStructureBuildOffsetInfoKHR acceleration_build_offset_info{};
-		acceleration_build_offset_info.primitiveCount = 1;
-		acceleration_build_offset_info.primitiveOffset = 0x0;
-		acceleration_build_offset_info.firstVertex = 0;
-		acceleration_build_offset_info.transformOffset = 0x0;
+		VkAccelerationStructureBuildGeometryInfoKHR geoBuildInfo{};
+		geoBuildInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+		geoBuildInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
+		geoBuildInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+		geoBuildInfo.geometryCount = 1;
+		geoBuildInfo.pGeometries = &acceleration_geometry;
 
-		m_blas = new Internal::BaseLevelAS(1, &acceleration_create_geometry_info, &acceleration_geometry, &acceleration_build_offset_info);
+		VkAccelerationStructureBuildRangeInfoKHR range{};
+		range.primitiveCount = 1;
+		range.primitiveOffset = 0;
+		range.firstVertex = 0;
+		range.transformOffset = 0;
+		const VkAccelerationStructureBuildRangeInfoKHR* ranges = &range;
+
+		m_blas = new Internal::BaseLevelAS(geoBuildInfo, &acceleration_geometry, &ranges);
 	}
 
 	BaseLevelAS::~BaseLevelAS()

@@ -3,7 +3,7 @@ from codecs import open
 
 setup(
 	name = 'VkInline',
-	version = '0.3.6',
+	version = '0.3.7',
 	description = 'A tool making it easy to use Vulkan for Python',
 	url='https://github.com/fynv/VkInline',
 	license='Anti 996',
